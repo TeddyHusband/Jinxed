@@ -1908,21 +1908,8 @@ async function confirmCreate(){
   }
 }
 
-function joinRoom(){
-  const name=document.getElementById('j-name').value.trim();
-  const code=document.getElementById('j-code').value.trim();
-  if(!name)return err('j-err',t('enter_name_err2'));
-  if(!code)return err('j-err',t('enter_room_code'));
-  // Local validation (will be replaced by Supabase lookup)
-  if(!ROOM||ROOM.code!==code)return err('j-err',t('room_not_found'));
-  if(ROOM.started)return err('j-err',t('game_already_started'));
-  S.name=name;S.pid=S.pid||uid();
-  const player={id:S.pid,name};
-  ROOM.players.push(player);
-  S.code=code;S.isHost=false;S.playMode='online';
-  onlineJoinRoom(code,player); // stub — Supabase will handle
-  renderLobby();go('s-lobby');
-}
+
+
 
 function renderLobby(){
   document.getElementById('l-code').textContent=ROOM.code||'';
@@ -2110,11 +2097,6 @@ function playAgain(){
   }
 }
 
-function resetHome(){
-  ROOM=null;
-  S={...S,code:null,isHost:false,word:'',roles:{},revealed:new Set()};
-  go('s-home');
-}
 
 /* ═══════ SPIN THE WHEEL ENGINE ═══════ */
 let WHEEL={options:[],spinning:false,currentRotation:0};
