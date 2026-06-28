@@ -1,4 +1,4 @@
-# Jinxed 🎮
+# Jinxed 👀
 
 A party web game with 5 game modes — play with friends online or pass the phone.
 
