@@ -1,0 +1,3227 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Jinxed</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&family=Tajawal:wght@400;500;700;800;900&display=swap" rel="stylesheet"/>
+<style>
+*{box-sizing:border-box;margin:0;padding:0;}
+:root{
+  --bg:#2a2a2a;
+  --card:#0d0d0d;
+  --card2:#1a1a1a;
+  --white:#ffffff;
+  --gray:#999999;
+  --gray2:#555555;
+  --border:#2e2e2e;
+  --accent:#00e5ff;
+  --green:#22c55e;
+  --red:#ff3b5c;
+  --text:#ffffff;
+}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:'Inter',sans-serif;
+  min-height:100vh;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:104px 20px 40px;
+  -webkit-font-smoothing:antialiased;
+}
+body.light{
+  --bg:#e8e8e8;--card:#ffffff;--card2:#f5f5f5;
+  --border:#d0d0d0;--text:#0d0d0d;--gray:#666;--gray2:#999;
+}
+
+/* ARABIC / RTL SUPPORT */
+body.lang-ar{font-family:'Tajawal',sans-serif;}
+body.lang-ar .big-title,body.lang-ar .pill-btn,body.lang-ar button,body.lang-ar input,body.lang-ar textarea,body.lang-ar .sec-label,body.lang-ar .body-text,body.lang-ar .notice,body.lang-ar .tap-name,body.lang-ar .tap-hint,body.lang-ar .cfg-lbl,body.lang-ar .cfg-val,body.lang-ar .nav-tab,body.lang-ar .wtb-card-text,body.lang-ar .rev-name,body.lang-ar .flip-name,body.lang-ar .flip-role,body.lang-ar .flip-word,body.lang-ar .role-title,body.lang-ar .role-hint,body.lang-ar .role-word{font-family:'Tajawal',sans-serif;}
+html.rtl{direction:rtl;}
+/* RTL flex flips */
+html.rtl .bottom-row,
+html.rtl .counter-row,
+html.rtl .mode-grid,
+html.rtl .tb-left,
+html.rtl .tb-right{ flex-direction: row-reverse; }
+html.rtl .cfg-row{ flex-direction: row-reverse; }
+html.rtl .tap-card{ flex-direction: row-reverse; }
+html.rtl .rev-item{ flex-direction: row-reverse; }
+html.rtl .pitem{ flex-direction: row-reverse; }
+/* RTL text alignment */
+html.rtl .sec-label,
+html.rtl .body-text,
+html.rtl .notice,
+html.rtl .code-lbl,
+html.rtl .tap-hint,
+html.rtl .circ-label{ text-align: right; }
+/* RTL back arrow — flip it to point the other way */
+html.rtl .circ[onclick*="go('s-home')"],
+html.rtl .circ[onclick*="go('wtb-home')"],
+html.rtl .circ[onclick*="go('s-join')"],
+html.rtl .circ[onclick*="go('wtb-join')"],
+html.rtl .circ[onclick*="go('s-reveal')"]{ transform: scaleX(-1); }
+/* RTL cat-item */
+html.rtl .cat-item{ flex-direction: row-reverse; text-align: right; }
+/* RTL toggle buttons */
+html.rtl .toggle-rev{ flex-direction: row-reverse; }
+/* RTL nav tabs */
+html.rtl .game-nav{ flex-direction: row-reverse; }
+body.lang-ar input,body.lang-ar textarea{text-align:right;}
+body.lang-ar .counter-row,body.lang-ar .bottom-row,body.lang-ar .toggle-rev,body.lang-ar .tb-right,body.lang-ar .nav-tabs{direction:rtl;}
+body.lang-ar .tap-card,body.lang-ar .rev-item,body.lang-ar .pitem,body.lang-ar .cfg-row{direction:rtl;}
+body.lang-ar .cw-meta{direction:rtl;}
+
+#bg-canvas{position:fixed;top:0;left:0;width:100%;height:100%;z-index:0;pointer-events:none;}
+
+/* TOPBAR */
+#topbar{
+  position:fixed;top:0;left:0;right:0;z-index:100;
+  display:flex;align-items:center;justify-content:space-between;
+  padding:14px 24px;
+}
+.tb-left{display:flex;align-items:center;gap:10px;cursor:pointer;}
+.tb-bear{width:40px;height:40px;object-fit:contain;}.bear-light{display:none!important;}body.light .bear-dark{display:none!important;}body.light .bear-light{display:inline!important;}
+.tb-name{font-size:16px;font-weight:800;color:var(--white);}
+body.light .tb-name{color:#0d0d0d;}
+.tb-right{display:flex;align-items:center;gap:8px;}
+.icon-btn{
+  background:rgba(255,255,255,0.08);border:1px solid rgba(255,255,255,0.1);
+  border-radius:50%;width:36px;height:36px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:16px;transition:all .2s;
+  color:var(--white);
+}
+body.light .icon-btn{background:rgba(0,0,0,0.06);border-color:rgba(0,0,0,0.1);color:#0d0d0d;}
+.icon-btn:hover{background:rgba(255,255,255,0.15);}
+
+#game-nav{
+  position:fixed;top:56px;left:0;right:0;z-index:99;
+  display:flex;gap:6px;padding:0 24px 10px;
+  overflow-x:auto;-webkit-overflow-scrolling:touch;
+  scrollbar-width:none;
+}
+#game-nav::-webkit-scrollbar{display:none;}
+.nav-tab{
+  background:transparent;border:none;color:var(--gray2);
+  font-family:'Inter',sans-serif;font-size:13px;font-weight:600;
+  padding:6px 12px;border-radius:20px;cursor:pointer;
+  white-space:nowrap;transition:all .15s;flex-shrink:0;
+}
+.nav-tab:hover{color:var(--gray);}
+.nav-tab.active{background:var(--white);color:#0d0d0d;font-weight:700;}
+body.light .nav-tab.active{background:#0d0d0d;color:#fff;}
+
+/* MAIN CARD — dialed.gg style */
+#app{position:relative;z-index:1;width:100%;max-width:560px;}
+.screen{display:none;animation:up .25s ease both;}
+.screen.active{display:block;}
+@keyframes up{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+.card{
+  background:var(--card);
+  border-radius:24px;
+  padding:40px 36px 36px;
+  width:100%;
+  min-height:500px;
+  display:flex;flex-direction:column;
+  position:relative;overflow:hidden;
+  isolation:isolate;
+}
+.card-flip-host{overflow:visible;}
+.card-particles-canvas{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;z-index:-1;border-radius:24px;}
+
+/* BIG TITLE inside card */
+.big-title{
+  font-size:clamp(56px,12vw,88px);
+  font-weight:800;letter-spacing:-3px;
+  color:var(--white);line-height:0.92;
+  margin-bottom:22px;
+}
+body.light .big-title{color:#0d0d0d;}
+
+.body-text{font-size:16px;color:var(--gray);line-height:1.65;margin-bottom:14px;}
+
+/* BOTTOM ROW */
+.bottom-row{margin-top:auto;padding-top:32px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+
+/* CIRCLE BUTTONS */
+.circ-wrap{display:flex;flex-direction:column;align-items:center;gap:5px;}
+.circ{
+  width:54px;height:54px;border-radius:50%;
+  background:var(--white);color:#0d0d0d;
+  border:none;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;font-weight:800;transition:all .15s;
+}
+.circ:hover{transform:scale(1.06);}
+.circ:active{transform:scale(0.96);}
+.circ.dark{background:var(--card2);color:var(--white);border:1px solid var(--border);}
+.circ.red{background:var(--red);color:var(--white);}
+.circ-label{font-size:11px;color:var(--gray2);font-weight:600;text-align:center;}
+
+/* WIDE PILL BUTTON */
+.pill-btn{
+  background:var(--white);color:#0d0d0d;
+  border:none;border-radius:50px;
+  font-family:'Inter',sans-serif;font-size:14px;font-weight:700;
+  padding:14px 26px;cursor:pointer;transition:all .15s;white-space:nowrap;
+}
+.pill-btn:hover{background:#e8e8e8;}
+.pill-btn:active{transform:scale(0.97);}
+.pill-btn.ghost{background:transparent;color:var(--gray);border:1px solid var(--border);}
+.pill-btn.ghost:hover{color:var(--white);border-color:var(--gray2);}
+body.light .pill-btn.ghost:hover{color:#0d0d0d;}
+
+/* FORM ELEMENTS */
+.sec-label{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray2);margin-bottom:10px;}
+.ig{margin-bottom:16px;}
+.ig .sec-label{margin-bottom:8px;}
+input,select,textarea{
+  width:100%;background:var(--card2);
+  border:1px solid var(--border);border-radius:12px;
+  color:var(--white);font-family:'Inter',sans-serif;
+  font-size:15px;font-weight:600;padding:13px 16px;
+  outline:none;-webkit-appearance:none;transition:border-color .2s;
+}
+body.light input,body.light select,body.light textarea{background:#f5f5f5;color:#0d0d0d;border-color:#d0d0d0;}
+input:focus,select:focus,textarea:focus{border-color:var(--gray2);}
+input::placeholder,textarea::placeholder{color:var(--gray2);font-weight:400;}
+select option{background:var(--card);}
+textarea{resize:none;height:80px;font-size:14px;line-height:1.5;}
+
+/* MODE CARDS */
+.mode-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.mode-card{
+  background:var(--card2);border:1.5px solid var(--border);
+  border-radius:12px;padding:16px 14px;cursor:pointer;transition:all .15s;text-align:center;
+}
+.mode-card:hover{border-color:var(--gray2);}
+.mode-card.sel{border-color:var(--white);}
+body.light .mode-card.sel{border-color:#0d0d0d;}
+.mode-icon{font-size:22px;margin-bottom:5px;filter:grayscale(1) brightness(1.8);}
+.mode-name{font-size:13px;font-weight:700;color:var(--white);}
+body.light .mode-name{color:#0d0d0d;}
+.mode-desc{font-size:11px;color:var(--gray);margin-top:2px;}
+
+/* CATEGORY GRID */
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:7px;margin-bottom:16px;}
+.cat-item{
+  background:var(--card2);border:1px solid var(--border);
+  border-radius:10px;padding:11px 13px;
+  display:flex;align-items:center;gap:9px;
+  cursor:pointer;transition:all .15s;font-size:13px;font-weight:600;color:var(--gray);
+}
+.cat-item:hover{border-color:var(--gray2);color:var(--white);}
+.cat-item:hover .cat-desc{color:var(--gray2);}
+.cat-item.sel{border-color:var(--white);color:var(--white);}
+.cat-item.sel .cat-desc{color:var(--gray2);}
+body.light .cat-item.sel{border-color:#0d0d0d;color:#0d0d0d;}
+.cat-icon{font-size:15px;filter:grayscale(1) brightness(1.8);flex-shrink:0;}
+.cat-label{display:flex;flex-direction:column;gap:2px;}
+.cat-desc{font-size:10px;font-weight:400;color:var(--gray2);line-height:1.2;}
+
+/* COUNTER */
+.counter-row{display:flex;align-items:center;gap:12px;margin-bottom:16px;}
+.c-btn{
+  background:var(--card2);border:1px solid var(--border);border-radius:10px;
+  width:42px;height:42px;display:flex;align-items:center;justify-content:center;
+  cursor:pointer;font-size:20px;font-weight:700;color:var(--white);
+  transition:all .15s;flex-shrink:0;
+}
+.c-btn:hover{border-color:var(--gray2);}
+.c-val{font-size:28px;font-weight:900;color:var(--accent);min-width:40px;text-align:center;}
+
+/* PLAY MODE CARDS */
+.play-card{
+  background:var(--card2);border:1.5px solid var(--border);
+  border-radius:14px;padding:20px;cursor:pointer;transition:all .15s;
+  display:flex;align-items:flex-start;gap:14px;margin-bottom:10px;
+}
+.play-card:hover{border-color:var(--gray2);}
+.play-card.sel{border-color:var(--white);}
+body.light .play-card.sel{border-color:#0d0d0d;}
+.play-card-icon{
+  width:42px;height:42px;border-radius:10px;
+  background:var(--card);border:1px solid var(--border);
+  display:flex;align-items:center;justify-content:center;
+  font-size:20px;flex-shrink:0;filter:grayscale(1) brightness(1.8);
+}
+.play-card-title{font-size:15px;font-weight:700;color:var(--white);margin-bottom:4px;}
+body.light .play-card-title{color:#0d0d0d;}
+.play-card-desc{font-size:13px;color:var(--gray);line-height:1.5;}
+
+/* ROOM CODE */
+.code-box{text-align:center;margin-bottom:20px;}
+.code-lbl{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:8px;}
+.code-val{font-size:72px;font-weight:900;letter-spacing:12px;color:var(--white);line-height:1;}
+body.light .code-val{color:#0d0d0d;}
+
+/* PLAYER LIST */
+.plist{display:flex;flex-direction:column;gap:7px;max-height:180px;overflow-y:auto;margin-bottom:14px;}
+.plist::-webkit-scrollbar{width:3px;}
+.plist::-webkit-scrollbar-thumb{background:var(--border);}
+.pitem{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:11px 14px;display:flex;align-items:center;gap:9px;font-weight:600;font-size:14px;}
+.ldot{width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;animation:pulse 1.5s infinite;}
+@keyframes pulse{0%,100%{opacity:1;transform:scale(1)}50%{opacity:.4;transform:scale(.8)}}
+
+/* CFG */
+.cfg-row{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--border);}
+.cfg-row:last-child{border-bottom:none;}
+.cfg-lbl{font-size:14px;color:var(--gray);}
+.cfg-val{font-size:14px;font-weight:700;color:var(--white);}
+body.light .cfg-val{color:#0d0d0d;}
+
+/* ROLE */
+.role-card{border-radius:16px;padding:36px 24px;text-align:center;display:flex;flex-direction:column;align-items:center;margin-bottom:14px;}
+.role-card.imp{background:rgba(255,59,92,0.08);border:1.5px solid rgba(255,59,92,0.3);}
+.role-card.crew{background:rgba(0,229,255,0.06);border:1.5px solid rgba(0,229,255,0.2);}
+.role-icon{font-size:48px;margin-bottom:12px;filter:grayscale(1) brightness(1.8);}
+.role-title{font-size:34px;font-weight:900;letter-spacing:-1px;margin-bottom:10px;}
+.role-card.imp .role-title{color:var(--red);}
+.role-card.crew .role-title{color:var(--accent);}
+.role-wlabel{font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:5px;}
+.role-word{font-size:36px;font-weight:900;letter-spacing:-1px;color:var(--white);}
+body.light .role-word{color:#0d0d0d;}
+.role-hint{margin-top:14px;font-size:14px;color:var(--gray);line-height:1.6;max-width:270px;}
+
+/* TAP */
+.tap-card{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:18px 16px;display:flex;align-items:center;justify-content:space-between;cursor:pointer;transition:all .15s;margin-bottom:8px;}
+
+/* FLIP CARD STYLE (alt reveal mode) — UNO-style card, horizontal flip with top-led peel feel */
+.flip-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:8px;align-items:start;isolation:isolate;}
+.flip-scene{perspective:1300px;aspect-ratio:5/8;width:100%;position:relative;isolation:isolate;z-index:0;cursor:pointer;}
+.flip-card{
+  position:relative;width:100%;height:100%;
+  transform-style:preserve-3d;cursor:pointer;
+  transform-origin:50% 50%;
+  transform:rotateY(0deg) translateZ(0);
+  transition:transform 1s cubic-bezier(.25,.46,.15,1);
+  will-change:transform;
+  backface-visibility:hidden;
+}
+/* Sheen sweeps top-to-bottom during the flip to sell a top-led peel feel while staying on the horizontal (Y) axis */
+.flip-card::after{
+  content:'';
+  position:absolute;left:0;right:0;top:-20%;height:60%;
+  background:linear-gradient(to bottom,rgba(255,255,255,0.16),transparent);
+  border-radius:18px 18px 0 0;
+  pointer-events:none;
+  opacity:0;
+  transform:translateY(0%);
+}
+.flip-card.is-animating::after{
+  animation:peelSweep 1s cubic-bezier(.25,.46,.15,1);
+}
+@keyframes peelSweep{
+  0%{opacity:0;transform:translateY(-10%);}
+  25%{opacity:1;}
+  75%{opacity:0.8;}
+  100%{opacity:0;transform:translateY(160%);}
+}
+.flip-face{
+  position:absolute;inset:0;border-radius:18px;
+  backface-visibility:hidden;-webkit-backface-visibility:hidden;
+  display:flex;flex-direction:column;align-items:center;justify-content:center;
+  padding:16px;text-align:center;
+  box-shadow:0 10px 30px rgba(0,0,0,0.4);
+}
+.flip-front{
+  background:
+    repeating-linear-gradient(45deg,rgba(255,255,255,0.025) 0px,rgba(255,255,255,0.025) 2px,transparent 2px,transparent 14px),
+    linear-gradient(160deg,var(--card2) 0%,#0a0a0a 100%);
+  border:2px solid var(--border);
+}
+.flip-front::before{
+  content:'';position:absolute;inset:9px;
+  border:1.5px solid rgba(255,255,255,0.08);
+  border-radius:13px;
+}
+.flip-front .flip-bear{font-size:32px;margin-bottom:10px;filter:grayscale(1) brightness(1.8);opacity:0.5;}
+.flip-front .flip-name{font-size:18px;font-weight:800;color:var(--white);margin-bottom:5px;}
+.flip-front .flip-tap{font-size:10px;color:var(--gray);letter-spacing:0.5px;text-transform:uppercase;}
+.flip-back{
+  transform:rotateY(180deg);
+  border:2px solid;
+}
+.flip-back.imp{background:linear-gradient(160deg,rgba(255,59,92,0.14) 0%,#1a0008 100%);border-color:rgba(255,59,92,0.4);}
+.flip-back.crew{background:linear-gradient(160deg,rgba(0,229,255,0.1) 0%,#021014 100%);border-color:rgba(0,229,255,0.3);}
+.flip-back::before{
+  content:'';position:absolute;inset:9px;
+  border:1.5px solid rgba(255,255,255,0.1);
+  border-radius:13px;
+}
+.flip-back .flip-icon{font-size:32px;margin-bottom:10px;filter:grayscale(1) brightness(1.8);}
+.flip-back .flip-role{font-size:19px;font-weight:900;letter-spacing:-0.3px;margin-bottom:7px;text-transform:uppercase;}
+.flip-back.imp .flip-role{color:var(--red);}
+.flip-back.crew .flip-role{color:var(--accent);}
+.flip-back .flip-word{font-size:20px;font-weight:900;color:var(--white);line-height:1.25;}
+body.light .flip-back .flip-word{color:#0d0d0d;}
+.flip-back .flip-sub{font-size:10px;color:var(--gray);margin-top:6px;line-height:1.4;padding:0 4px;}
+.flip-back .flip-retap{font-size:9px;color:var(--gray2);margin-top:12px;letter-spacing:0.5px;text-transform:uppercase;}
+.toggle-rev{display:flex;justify-content:center;gap:8px;margin-bottom:18px;}
+.toggle-rev button{background:var(--card2);border:1px solid var(--border);border-radius:20px;padding:6px 14px;font-size:12px;font-weight:600;color:var(--gray);cursor:pointer;transition:all .15s;}
+.toggle-rev button.active{background:var(--white);color:#0d0d0d;border-color:var(--white);}
+body.light .toggle-rev button.active{background:#0d0d0d;color:#fff;}
+
+/* WTB PLAYING-CARD HAND STYLE */
+.wtb-card-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.wtb-card-tile{
+  position:relative;background:#fff;border-radius:14px;
+  padding:16px 14px 38px;min-height:128px;cursor:pointer;
+  display:flex;align-items:flex-start;
+  box-shadow:0 6px 16px rgba(0,0,0,0.3);
+  border:1px solid #e2e2e2;
+  transition:transform .15s ease,box-shadow .15s ease;
+}
+.wtb-card-tile:active{transform:scale(0.96);}
+.wtb-card-tile:hover{transform:translateY(-3px);box-shadow:0 10px 22px rgba(0,0,0,0.35);}
+.wtb-card-tile .wtb-card-text{font-size:14px;font-weight:700;color:#111;line-height:1.32;}
+.wtb-card-tile .wtb-card-corner{
+  position:absolute;bottom:10px;right:12px;
+  font-size:10px;font-weight:800;letter-spacing:0.5px;
+  color:#fff;background:#111;border-radius:6px;padding:4px 9px;
+  text-transform:uppercase;
+}
+@media(min-width:480px){.wtb-card-grid{grid-template-columns:1fr 1fr 1fr;}}
+
+.tap-card:hover{border-color:var(--gray2);}
+.tap-card.done{opacity:.35;cursor:default;}
+.tap-name{font-size:15px;font-weight:700;}
+.tap-hint{font-size:12px;color:var(--gray);margin-top:2px;}
+.tap-arr{color:var(--gray2);font-size:18px;}
+
+/* REV */
+.rev-item{background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;display:flex;align-items:center;justify-content:space-between;margin-bottom:7px;}
+.rev-name{font-weight:700;font-size:14px;}
+.rtag{font-size:11px;font-weight:700;letter-spacing:1px;text-transform:uppercase;padding:3px 9px;border-radius:5px;}
+.rtag.imp{background:rgba(255,59,92,0.12);color:var(--red);}
+.rtag.crew{background:rgba(0,229,255,0.1);color:var(--accent);}
+
+/* ERR */
+.err{background:rgba(255,59,92,0.1);border:1px solid rgba(255,59,92,0.25);border-radius:8px;color:var(--red);font-size:13px;font-weight:600;padding:10px 14px;text-align:center;display:none;margin-bottom:10px;}
+.err.show{display:block;}
+
+/* NOTICE */
+.notice{background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:14px 16px;font-size:13px;line-height:1.6;color:var(--gray);margin-top:12px;}
+
+/* DICE */
+.dice-cube{
+  width:78px;height:78px;background:var(--card2);
+  border:1.5px solid var(--border);border-radius:16px;
+  display:flex;align-items:center;justify-content:center;
+  cursor:pointer;transition:border-color .15s,transform .1s;
+  box-shadow:0 4px 14px rgba(0,0,0,0.25);
+  flex-shrink:0;color:var(--text);
+}
+.dice-cube:hover{border-color:var(--gray2);}
+.dice-cube:active{transform:scale(0.95);}
+.dice-face{width:62%;height:62%;}
+.dice-face svg circle{fill:var(--text);}
+.dice-cube.rolling{animation:diceWiggle .26s ease-in-out infinite;border-color:var(--accent);}
+@keyframes diceWiggle{
+  0%{transform:rotate(0deg) scale(1);}
+  25%{transform:rotate(-10deg) scale(1.05);}
+  50%{transform:rotate(0deg) scale(0.97);}
+  75%{transform:rotate(10deg) scale(1.05);}
+  100%{transform:rotate(0deg) scale(1);}
+}
+.notice strong{color:var(--white);}
+body.light .notice strong{color:#0d0d0d;}
+
+/* custom words meta */
+.cw-meta{display:flex;justify-content:space-between;margin-top:5px;font-size:12px;color:var(--gray);}
+.cw-meta span:last-child{color:var(--red);}
+
+@media(max-width:400px){
+  .card{padding:28px 20px 28px;min-height:0;}
+  .big-title{font-size:52px;}
+  .code-val{font-size:52px;letter-spacing:6px;}
+  .mode-grid,.cat-grid{grid-template-columns:1fr;}
+}
+</style>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+</head>
+<body>
+<canvas id="bg-canvas"></canvas>
+
+<div id="topbar">
+  <div class="tb-left" onclick="switchGame('jinxed')">
+    <img class="tb-bear bear-dark" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAACMElEQVR42u2bS7KFIAwFbyz3v2Xe5A0sS0CUwAl2D+8H8wci/H4AAAAAAAAAAAAAAAAAAAAAK2LeD0gppcsHm5maMSLJekuZnEIlZb8mq3lF0Z2oSSmlu9HVaoSWce/KKp8NtUhqNWw6oBDZb2SZWkNb/uel5HncHrJKlaBSKh+FvvpN7XuvIHkqS0vpnBr9V9GsmsI5WXN6yZefKCugmkytn0tF/8ha6jl3eWbBNkthpRpqZjYrILavG1/BCcPmgAgKRpW7Knik6KrJ3VOXvXcKH8tL5LQO0XoImaqr67iyE8LoJt+0+oo+KzjBW4ftB9RL9EDwabpQgihB41YbiqsZ81K0ZQfpfRykx/heTcRNLVPsn16199hSOBtQIRtk54CQh6EesKsJ5BWVqquyPWLUrHSEUMYBtdZ1qZZfOabkDKU2+aZg+FxUn7+rRfjVBF46+6OQMRLL0NxqKDdWyVk5OXLjswlrHKd0WCrs+1zV1UarQT0PUXk5clN2JGeHJkVK75NqniXxs2UsncB4lcnQI9JantNDJg8nhn4fsMJScotiFIWl55Lt6KerkONu9vz5VzqprrW39wW6UfNSK7ua4T3Kw9OsGHl3zdUJM28kvr3iuszydYYTvO4Xf25/0PrftwYcaXybkQVP62mppdyjXoe8EzA7wujziG3tqfdBDKBieFNyxMh2hkqdN9WsaNloRd5MhZntn5QLekIAAAAAAAAAAAAAAAAAAAAAs/gDG0ZKKaqVKbcAAAAASUVORK5CYII=" alt="bear"/><img class="tb-bear bear-light" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGAAAABgCAYAAADimHc4AAACQElEQVR42u2bTQ6DIBBGi3Hr/Q/KAdpVE2MERBn5Bt5b2krnH5jC5wMAAAAAAAAAAAAAAAAAAAAwIsH6B7Zt+549jzEGNWN4kvWSMimFcsrOJmuwiqIrUbNt2/dqdNUaoWbcq7LKZ0MpkmoN+x/vbgS2juwnsnStoTXvWSl5HLeFrFIlKJfKe6HPvlP63CpI7spSUzq7Rv9ZNKumcErWlF7y5cfLCqgkU+1zqeh/s5Zazl2WWbD0UliphsYYQ6+AWGY3voITXpsDPCjoVe6i4J6iqyR3S13W1im8Ly+e09pF68Flqo6u48hOcKObfNNqFn1GcIK1DssHqJfogeDddKEEUYLeW20ormaClaI1O0jr4yAtxrdqIi5qmRJjDH9FW0TrvqVwNKBCNsjOAS4PQ91gVRPIKipVV2Wrx6gZ6QihjANKretcLT9zTM4ZSm3yRcHwqag+flaK8LMJPHf2RyFjJJahqdVQaqycs1JypMZnE1Y5Tu6wlNv/c1VXG7UGtTxEZeXIRdmRnB3qFCmtT6pZlsRpy9j+7sDV709jvKfKXn2/5ndayGThRNf/B4ywlFy8GEVh6TlkO/ruKmS/mz0+n6WTalp7W1+ge2teqmVVM7xFebibFW/eXTN1Qs8biU+vuA6zfO3hBKv7xdPtD2rffWrAN40femTB3Xqaaym3qNcu7wT0jjD6PGJbe+q9EwOoGD4oOeLNdoZKnQ+qWVGz0fK8mXIz298pF/SEAAAAAAAAAAAAAAAAAAAAAHrxA4aDt1eZFlYMAAAAAElFTkSuQmCC" alt="bear" style="display:none;"/>
+  </div>
+  <div class="tb-right">
+    <button class="icon-btn" id="lang-btn" onclick="toggleLang()" title="Switch language" style="font-family:'Inter',sans-serif;font-weight:800;font-size:13px;">
+      <span id="lang-btn-text">AR</span>
+    </button>
+    <button class="icon-btn" id="mute-btn" onclick="toggleMute()" title="Mute">
+      <svg id="mute-icon-on" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><path d="M19.07 4.93a10 10 0 0 1 0 14.14"/><path d="M15.54 8.46a5 5 0 0 1 0 7.07"/></svg>
+      <svg id="mute-icon-off" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"/><line x1="23" y1="9" x2="17" y2="15"/><line x1="17" y1="9" x2="23" y2="15"/></svg>
+    </button>
+    <button class="icon-btn" id="theme-btn" onclick="toggleTheme()" title="Toggle theme">
+      <svg id="theme-icon-dark" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z"/></svg>
+      <svg id="theme-icon-light" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="display:none;"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"/><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"/><line x1="1" y1="12" x2="3" y2="12"/><line x1="21" y1="12" x2="23" y2="12"/><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"/><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"/></svg>
+    </button>
+  </div>
+</div>
+<div id="game-nav">
+  <button class="nav-tab active" id="nav-jinxed" onclick="switchGame('jinxed')" data-i18n="nav_jinxed">Jinxed</button>
+  <button class="nav-tab" id="nav-wtb" onclick="switchGame('wtb')" data-i18n="nav_wtb">What the Blank?</button>
+  <button class="nav-tab" id="nav-wheel" onclick="switchGame('wheel')" data-i18n="nav_wheel">Spin the Wheel</button>
+  <button class="nav-tab" id="nav-dice" onclick="switchGame('dice')" data-i18n="nav_dice">Roll the Dice</button>
+  <button class="nav-tab" id="nav-8ball" onclick="switchGame('8ball')" data-i18n="nav_8ball">Magic 8 Ball</button>
+</div>
+
+<div id="app">
+
+  <!-- HOME -->
+  <div class="screen active" id="s-home">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="position:relative;z-index:1;display:flex;flex-direction:column;flex:1;">
+        <div class="big-title" data-i18n="jinxed_title">jinxed</div>
+        <p class="body-text" data-i18n="jinxed_desc">One player doesn't know the word. Everyone else does. The imposter has to blend in before they get caught.</p>
+        <p class="body-text" data-i18n="pick_mode">Pick how you want to play below.</p>
+        <div class="bottom-row">
+          <div class="circ-wrap">
+            <button class="circ" onclick="startCreate('online');playClick()" title="Create Online"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
+            <div class="circ-label" data-i18n="online_label">Online</div>
+          </div>
+          <div class="circ-wrap">
+            <button class="circ dark" onclick="startCreate('phone');playClick()" title="Pass the Phone"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></button>
+            <div class="circ-label" data-i18n="pass_phone_label">Pass Phone</div>
+          </div>
+          <div class="circ-wrap">
+            <button class="circ dark" onclick="go('s-join');playClick()" title="Join Room"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+            <div class="circ-label" data-i18n="join_label">Join</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="notice" data-i18n="jinxed_notice" data-i18n-html><strong>Online Mode</strong> — everyone joins on their own phone or PC with a room code, roles revealed privately on each screen.<br/><br/><strong>Pass the Phone</strong> — one device passed around the group, each player taps their name to see their role.</div>
+  </div>
+
+  <!-- CREATE -->
+  <div class="screen" id="s-create">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="create_title">create</div>
+
+      <div class="ig" id="online-name-section">
+        <div class="sec-label" data-i18n="your_name">Your Name</div>
+        <input id="c-name" type="text" placeholder="Enter your name" data-i18n-ph="enter_name_ph" maxlength="20"/>
+      </div>
+
+      <div id="phone-players-section" style="display:none;">
+        <div class="sec-label" data-i18n="number_of_players">Number of Players</div>
+        <div class="counter-row">
+          <button class="c-btn" onclick="chPlayerCount(-1);playClick()">−</button>
+          <div class="c-val" id="player-count-disp">3</div>
+          <button class="c-btn" onclick="chPlayerCount(1);playClick()">+</button>
+        </div>
+        <div class="sec-label" style="margin-top:14px;" data-i18n="player_names">Player Names</div>
+        <div id="player-name-inputs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+      </div>
+
+      <div class="sec-label" data-i18n="game_mode">Game Mode</div>
+      <div class="mode-grid">
+        <div class="mode-card sel" id="m-word" onclick="setMode('word');playClick()">
+          <div class="mode-icon">🕵️</div>
+          <div class="mode-name" data-i18n="word_mode">Word</div>
+          <div class="mode-desc" data-i18n="word_mode_desc">Describe without saying it</div>
+        </div>
+        <div class="mode-card" id="m-draw" onclick="setMode('draw');playClick()">
+          <div class="mode-icon">✏️</div>
+          <div class="mode-name" data-i18n="drawing_mode">Drawing</div>
+          <div class="mode-desc" data-i18n="drawing_mode_desc">Draw blind as imposter</div>
+        </div>
+      </div>
+
+      <div class="sec-label" data-i18n="category">Category</div>
+      <div class="cat-grid" id="cat-grid"></div>
+
+      <div id="custom-section" style="display:none;">
+        <div class="sec-label" data-i18n="custom_words">Custom Words</div>
+        <textarea id="custom-words" placeholder="Pizza, Burger, Sushi, Tacos..." data-i18n-ph="custom_words_ph"></textarea>
+        <div class="cw-meta"><span data-i18n="min_3_words">Min 3 words, comma separated</span><span id="word-count">0 words</span></div>
+      </div>
+
+      <div class="sec-label" style="margin-top:4px;" data-i18n="imposters">Imposters</div>
+      <div class="counter-row">
+        <button class="c-btn" onclick="chImp(-1);playClick()">−</button>
+        <div class="c-val" id="imp-disp">1</div>
+        <button class="c-btn" onclick="chImp(1);playClick()">+</button>
+      </div>
+
+      <div class="err" id="c-err"></div>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="go('s-home');playClick()">←</button>
+          <div class="circ-label" data-i18n="back">Back</div>
+        </div>
+        <button class="pill-btn" onclick="confirmCreate();playClick()" data-i18n="start_game">Start Game →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- JOIN -->
+  <div class="screen" id="s-join">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="join_title">join</div>
+      <div class="ig">
+        <div class="sec-label" data-i18n="your_name">Your Name</div>
+        <input id="j-name" type="text" placeholder="Enter your name" data-i18n-ph="enter_name_ph" maxlength="20"/>
+      </div>
+      <div class="ig">
+        <div class="sec-label" data-i18n="room_code">Room Code</div>
+        <input id="j-code" type="text" placeholder="0000" maxlength="6" style="font-size:34px;font-weight:900;text-align:center;letter-spacing:10px;padding:16px;"/>
+      </div>
+      <div class="err" id="j-err"></div>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="go('s-home');playClick()">←</button>
+          <div class="circ-label" data-i18n="back">Back</div>
+        </div>
+        <button class="pill-btn" onclick="joinRoom();playClick()" data-i18n="join_arrow">Join →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- LOBBY -->
+  <div class="screen" id="s-lobby">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="code-box">
+        <div class="code-lbl" data-i18n="room_code_share">Room Code — Share This</div>
+        <div class="code-val" id="l-code">----</div>
+        <div id="jinxed-qr" style="margin:12px auto 4px;width:120px;height:120px;background:#fff;border-radius:8px;padding:6px;display:none;"></div>
+        <button class="pill-btn" style="margin-top:12px;font-family:'Inter',sans-serif;font-size:13px;padding:10px 20px;width:auto;display:inline-flex;align-items:center;gap:6px;background:var(--card2);color:var(--gray);border:1px solid var(--border);" onclick="copyInviteLink('jinxed')">
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+          <span id="jinxed-invite-btn-text" data-i18n="copy_invite_link">Copy Invite Link</span>
+        </button>
+      </div>
+      <div class="sec-label" data-i18n="players_joined">Players</div>
+      <div class="plist" id="l-players"></div>
+      <div id="l-host-section">
+        <div class="sec-label" data-i18n="settings_lbl">Settings</div>
+        <div class="cfg-row"><span class="cfg-lbl" data-i18n="mode_lbl">Mode</span><span class="cfg-val" id="l-mode"></span></div>
+        <div class="cfg-row"><span class="cfg-lbl" data-i18n="category_lbl">Category</span><span class="cfg-val" id="l-cat"></span></div>
+        <div class="cfg-row"><span class="cfg-lbl" data-i18n="imposters">Imposters</span><span class="cfg-val" id="l-imp"></span></div>
+        <div class="cfg-row"><span class="cfg-lbl" data-i18n="play_style">Play Style</span><span class="cfg-val" id="l-style"></span></div>
+        <div class="err" id="l-err"></div>
+        <div class="bottom-row">
+          <div class="circ-wrap">
+            <button class="circ dark" onclick="leaveRoom();playClick()">←</button>
+            <div class="circ-label" data-i18n="leave_room">Leave</div>
+          </div>
+          <button class="pill-btn" onclick="startGame();playClick()" data-i18n="start_game">Start Game →</button>
+        </div>
+      </div>
+      <div id="l-guest-section" style="display:none;">
+        <p class="body-text" data-i18n="waiting_host">Waiting for the host to start…</p>
+        <div class="bottom-row">
+          <div class="circ-wrap">
+            <button class="circ dark" onclick="leaveRoom();playClick()">←</button>
+            <div class="circ-label" data-i18n="leave_room">Leave</div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REVEAL -->
+  <div class="screen" id="s-reveal">
+    <div class="card card-flip-host">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="your_turn">your<br>turn</div>
+      <p class="body-text" data-i18n="your_turn_desc">Tap your name to see your secret role privately. Don't show anyone.</p>
+      <div class="toggle-rev">
+        <button id="rev-style-list" class="active" onclick="setRevealStyle('list')" data-i18n="list_style">List</button>
+        <button id="rev-style-flip" onclick="setRevealStyle('flip')" data-i18n="flip_cards_style">Flip Cards</button>
+      </div>
+      <div id="reveal-list" style="margin-top:0;position:relative;z-index:1;"></div>
+    </div>
+  </div>
+
+  <!-- ROLE CARD -->
+  <div class="screen" id="s-role">
+    <div class="card" style="justify-content:center;align-items:center;">
+      <canvas class="card-particles-canvas"></canvas>
+      <div id="role-container" style="width:100%;"></div>
+      <div class="bottom-row" style="justify-content:center;">
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="backReveal();playClick()">←</button>
+          <div class="circ-label" data-i18n="back">Back</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- GAME -->
+  <div class="screen" id="s-game">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:3px;" id="g-mode-lbl"></div>
+      <div style="font-size:13px;font-weight:600;color:var(--gray);margin-bottom:16px;" id="g-cat-lbl"></div>
+      <div class="big-title" id="g-word" style="font-size:clamp(38px,9vw,64px);margin-bottom:6px;"></div>
+      <p class="body-text" data-i18n="everyone_knows">Everyone knows this — except the imposter(s).</p>
+      <div class="sec-label" style="margin-top:16px;" data-i18n="all_roles">All Roles</div>
+      <div id="g-roles" style="margin-bottom:auto;"></div>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ red" onclick="endGame();playClick()">✕</button>
+          <div class="circ-label" data-i18n="end_round">End Round</div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ROUND OVER -->
+  <div class="screen" id="s-over">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="round_over">round<br>over</div>
+      <p class="body-text" data-i18n="the_word_was">The word was</p>
+      <div style="font-size:clamp(36px,9vw,56px);font-weight:900;letter-spacing:-2px;color:var(--white);margin:6px 0 20px;" id="o-word"></div>
+      <p class="body-text" style="margin-bottom:4px;" data-i18n="imposters_label">Imposter(s)</p>
+      <div style="font-size:24px;font-weight:800;color:var(--red);margin-bottom:auto;" id="o-imps"></div>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="resetHome();playClick()" title="Home"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></button>
+          <div class="circ-label" data-i18n="home_label">Home</div>
+        </div>
+        <button class="pill-btn" onclick="playAgain();playClick()" data-i18n="play_again">Play Again →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══════════════════ WHAT THE BLANK ══════════════════ -->
+
+  <!-- WTB HOME -->
+  <div class="screen" id="wtb-home">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="display:flex;align-items:center;gap:12px;margin-bottom:4px;">
+        <div class="big-title" style="margin-bottom:0;" data-i18n="wtb_title">what the<br>blank?</div>
+        <div style="background:var(--red);color:#fff;font-size:11px;font-weight:900;letter-spacing:1px;padding:4px 8px;border-radius:6px;align-self:flex-start;margin-top:8px;flex-shrink:0;">18+</div>
+      </div>
+      <p class="body-text" data-i18n="wtb_desc">One player is the Judge each round — they don't play, they judge. Everyone else secretly picks an answer card to fill the blank. The Judge picks the funniest. Most points wins.</p>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ" onclick="wtbStartCreate('online');playClick()" title="Create Online"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/><path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/></svg></button>
+          <div class="circ-label" data-i18n="online_label">Online</div>
+        </div>
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="wtbStartCreate('phone');playClick()" title="Pass the Phone"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><rect x="5" y="2" width="14" height="20" rx="2" ry="2"/><line x1="12" y1="18" x2="12.01" y2="18"/></svg></button>
+          <div class="circ-label" data-i18n="pass_phone_label">Pass Phone</div>
+        </div>
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="go('wtb-join');playClick()" title="Join Room"><svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><line x1="5" y1="12" x2="19" y2="12"/><polyline points="12 5 19 12 12 19"/></svg></button>
+          <div class="circ-label" data-i18n="join_label">Join</div>
+        </div>
+      </div>
+    </div>
+    <div class="notice" data-i18n="wtb_notice" data-i18n-html><strong>Online Mode</strong> — everyone joins on their own phone or PC with a room code.<br/><br/><strong>Pass the Phone</strong> — one device passed around the group, each player picks their card on their turn.</div>
+  </div>
+
+  <!-- WTB CREATE -->
+  <div class="screen" id="wtb-create">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="create_title">create</div>
+
+      <div class="ig" id="wtb-online-name-section">
+        <div class="sec-label" data-i18n="your_name">Your Name</div>
+        <input id="wtb-host-name" type="text" placeholder="Enter your name" data-i18n-ph="enter_name_ph" maxlength="20"/>
+      </div>
+
+      <div id="wtb-phone-players-section" style="display:none;">
+        <div class="sec-label" data-i18n="number_of_players">Number of Players</div>
+        <div class="counter-row">
+          <button class="c-btn" onclick="wtbChPlayers(-1);playClick()">−</button>
+          <div class="c-val" id="wtb-player-disp">3</div>
+          <button class="c-btn" onclick="wtbChPlayers(1);playClick()">+</button>
+        </div>
+        <div class="sec-label" style="margin-top:14px;" data-i18n="player_names">Player Names</div>
+        <div id="wtb-name-inputs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
+      </div>
+
+      <div class="sec-label" data-i18n="number_of_rounds">Number of Rounds</div>
+      <div class="counter-row">
+        <button class="c-btn" onclick="wtbChRounds(-1);playClick()">−</button>
+        <div class="c-val" id="wtb-rounds-disp">5</div>
+        <button class="c-btn" onclick="wtbChRounds(1);playClick()">+</button>
+      </div>
+      <div class="err" id="wtb-create-err"></div>
+      <div id="wtb-lobby-code-section" style="display:none;margin-bottom:16px;">
+        <div class="code-box" style="text-align:center;background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;">
+          <div class="code-lbl" data-i18n="room_code">Room Code</div>
+          <div style="font-size:40px;font-weight:900;letter-spacing:8px;color:var(--white);" id="wtb-room-code-display">----</div>
+          <div id="wtb-qr" style="margin:12px auto 4px;width:120px;height:120px;background:#fff;border-radius:8px;padding:6px;display:none;"></div>
+          <button class="pill-btn" style="margin-top:10px;font-family:'Inter',sans-serif;font-size:13px;padding:10px 20px;width:auto;display:inline-flex;align-items:center;gap:6px;background:var(--card2);color:var(--gray);border:1px solid var(--border);" onclick="copyInviteLink('wtb')">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M10 13a5 5 0 0 0 7.54.54l3-3a5 5 0 0 0-7.07-7.07l-1.72 1.71"/><path d="M14 11a5 5 0 0 0-7.54-.54l-3 3a5 5 0 0 0 7.07 7.07l1.71-1.71"/></svg>
+            <span id="wtb-invite-btn-text" data-i18n="copy_invite_link">Copy Invite Link</span>
+          </button>
+        </div>
+        <div class="sec-label" style="margin-top:14px;" data-i18n="players_joined">Players Joined</div>
+        <div id="wtb-online-players" style="display:flex;flex-direction:column;gap:6px;"></div>
+      </div>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="go('wtb-home');playClick()">←</button>
+          <div class="circ-label" data-i18n="back">Back</div>
+        </div>
+        <button class="pill-btn" id="wtb-start-btn" onclick="wtbConfirmCreate();playClick()" data-i18n="wtb_start_game">Start Game →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WTB JOIN -->
+  <div class="screen" id="wtb-join">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="join_title">join</div>
+      <div class="ig">
+        <div class="sec-label" data-i18n="your_name">Your Name</div>
+        <input id="wtb-j-name" type="text" placeholder="Enter your name" data-i18n-ph="enter_name_ph" maxlength="20"/>
+      </div>
+      <div class="ig">
+        <div class="sec-label" data-i18n="room_code">Room Code</div>
+        <input id="wtb-j-code" type="text" placeholder="0000" maxlength="6" style="font-size:34px;font-weight:900;text-align:center;letter-spacing:10px;padding:16px;"/>
+      </div>
+      <div class="err" id="wtb-j-err"></div>
+      <div class="bottom-row">
+        <div class="circ-wrap">
+          <button class="circ dark" onclick="go('wtb-home');playClick()">←</button>
+          <div class="circ-label" data-i18n="back">Back</div>
+        </div>
+        <button class="pill-btn" onclick="wtbJoinRoom();playClick()" data-i18n="join_arrow">Join →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WTB PROMPT REVEAL — show prompt card & announce judge -->
+  <div class="screen" id="wtb-prompt-reveal">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:10px;"><span data-i18n="round_of_label">Round</span> <span id="wtb-pr-round"></span> <span data-i18n="of_connector">of</span> <span id="wtb-pr-total"></span></div>
+      <div class="sec-label" data-i18n="the_prompt">The Prompt</div>
+      <div style="background:#000;border:2px solid #fff;border-radius:16px;padding:24px;margin:10px 0 18px;">
+        <div style="font-size:clamp(18px,5vw,26px);font-weight:900;color:#fff;line-height:1.4;" id="wtb-pr-prompt"></div>
+      </div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:auto;">
+        <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:6px;" data-i18n="judge_this_round">Judge this round</div>
+        <div style="font-size:22px;font-weight:900;color:var(--accent);" id="wtb-pr-judge"></div>
+        <div style="font-size:13px;color:var(--gray);margin-top:4px;" id="wtb-pr-judge-note"></div>
+      </div>
+      <div class="bottom-row" style="padding-top:20px;">
+        <button class="pill-btn" onclick="wtbStartPicking();playClick()" style="width:100%;" data-i18n="start_picking_cards">Start Picking Cards →</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- WTB HAND (pass device, pick a card) -->
+  <div class="screen" id="wtb-hand-list">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:6px;"><span data-i18n="round_of_label">Round</span> <span id="wtb-round-num"></span> <span data-i18n="of_connector">of</span> <span id="wtb-round-total"></span></div>
+      <div style="background:#000;border:2px solid #333;border-radius:12px;padding:16px 20px;margin-bottom:14px;">
+        <div style="font-size:clamp(15px,4vw,20px);font-weight:800;color:#fff;line-height:1.4;" id="wtb-prompt-display"></div>
+      </div>
+      <p class="body-text" style="margin-bottom:12px;" data-i18n="judge_waiting_note">Pass the device. Each player taps their name privately, picks a card, then passes it on. The Judge waits.</p>
+      <div id="wtb-hand-playerlist" style="margin-top:4px;"></div>
+    </div>
+  </div>
+
+  <!-- WTB HAND PICK (single player's card hand) -->
+  <div class="screen" id="wtb-hand-pick">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="font-size:13px;font-weight:700;color:var(--gray);margin-bottom:6px;"><span data-i18n="your_turn_comma">YOUR TURN,</span> <span id="wtb-current-player-name"></span></div>
+      <div class="big-title" style="font-size:clamp(26px,6.5vw,36px);margin-bottom:14px;" id="wtb-prompt-display-2"></div>
+      <div class="toggle-rev">
+        <button id="wtb-pick-style-list" class="active" onclick="wtbSetPickStyle('list')" data-i18n="list_style">List</button>
+        <button id="wtb-pick-style-cards" onclick="wtbSetPickStyle('cards')" data-i18n="cards_style">Cards</button>
+      </div>
+      <div class="sec-label" data-i18n="pick_card_blank">Pick a card to fill the blank</div>
+      <div id="wtb-hand-cards" style="margin-top:8px;margin-bottom:16px;"></div>
+      <button class="pill-btn ghost" style="background:transparent;border:1px solid var(--border);color:var(--gray);" onclick="go('wtb-hand-list');playClick()" data-i18n="back_to_player_list">← Back to player list</button>
+    </div>
+  </div>
+
+  <!-- WTB JUDGING — Judge picks the winner -->
+  <div class="screen" id="wtb-voting">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div style="font-size:11px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);margin-bottom:4px;"><span data-i18n="round_of_label">Round</span> <span id="wtb-vote-round-num"></span> — <span data-i18n="judge_picks">Judge Picks</span></div>
+      <div style="font-size:16px;font-weight:800;color:var(--accent);margin-bottom:10px;"><span id="wtb-judge-name-display"></span><span data-i18n="pick_funniest_inline">, pick the funniest answer.</span></div>
+      <div style="background:#000;border:2px solid #333;border-radius:12px;padding:14px 18px;margin-bottom:14px;">
+        <div style="font-size:clamp(14px,3.5vw,18px);font-weight:800;color:#fff;line-height:1.4;" id="wtb-prompt-display-3"></div>
+      </div>
+      <p class="body-text" style="margin-bottom:10px;" data-i18n="read_aloud_tap">Read each answer aloud. Tap the one that wins the point.</p>
+      <div id="wtb-vote-cards" style="display:flex;flex-direction:column;gap:10px;"></div>
+    </div>
+  </div>
+
+  <!-- WTB ROUND RESULT -->
+  <div class="screen" id="wtb-roundresult">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" style="font-size:clamp(32px,8vw,52px);" data-i18n="winner_title">winner!</div>
+      <div style="font-size:13px;font-weight:700;letter-spacing:1px;color:var(--gray);margin-bottom:4px;" data-i18n="judge_chose">This round's Judge chose</div>
+      <div style="font-size:26px;font-weight:900;color:var(--accent);margin-bottom:4px;" id="wtb-round-winner-name"></div>
+      <div style="background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:12px 16px;margin-bottom:16px;font-size:14px;color:var(--gray);line-height:1.5;" id="wtb-winning-card-display"></div>
+      <div class="sec-label" data-i18n="scoreboard_lbl">Scoreboard</div>
+      <div id="wtb-scoreboard" style="margin-top:8px;margin-bottom:10px;"></div>
+      <div style="font-size:13px;color:var(--gray);margin-bottom:auto;padding:10px 0;border-top:1px solid var(--border);" id="wtb-next-judge-preview"></div>
+      <button class="pill-btn" style="margin-top:16px;" onclick="wtbNextRound();playClick()" id="wtb-next-btn">Next Round →</button>
+    </div>
+  </div>
+
+  <!-- WTB FINAL RESULTS -->
+  <div class="screen" id="wtb-final">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="game_over">game<br>over</div>
+      <div style="font-size:13px;font-weight:700;letter-spacing:1px;color:var(--gray);margin-bottom:6px;" data-i18n="funniest_person">The funniest person of the night is</div>
+      <div style="font-size:34px;font-weight:900;color:var(--accent);margin-bottom:20px;" id="wtb-final-winner"></div>
+      <div class="sec-label" data-i18n="final_scoreboard">Final Scoreboard</div>
+      <div id="wtb-final-scoreboard" style="margin-top:8px;margin-bottom:auto;"></div>
+      <button class="pill-btn" onclick="go('wtb-home');playClick()" data-i18n="back_to_home">Back to Home →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ SPIN THE WHEEL ══════════════════ -->
+  <div class="screen" id="wheel-home">
+    <div class="card">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" data-i18n="wheel_title">spin the<br>wheel</div>
+      <p class="body-text" data-i18n="wheel_desc">Add as many options as you want, then spin to pick one at random.</p>
+      <div class="ig">
+        <div class="sec-label" data-i18n="add_option">Add an Option</div>
+        <div style="display:flex;gap:8px;">
+          <input id="wheel-input" type="text" placeholder="Type something..." data-i18n-ph="type_something_ph" maxlength="40" style="flex:1;" onkeydown="if(event.key==='Enter')wheelAddOption()"/>
+          <button class="pill-btn" style="width:auto;padding:13px 20px;" onclick="wheelAddOption();playClick()" data-i18n="add_btn">Add</button>
+        </div>
+      </div>
+      <div id="wheel-options-list" style="display:flex;flex-direction:column;gap:7px;margin-top:4px;margin-bottom:16px;max-height:180px;overflow-y:auto;"></div>
+      <div class="err" id="wheel-err"></div>
+      <div style="display:flex;justify-content:center;margin:10px 0 20px;">
+        <div style="position:relative;width:260px;height:260px;">
+          <canvas id="wheel-canvas" width="260" height="260"></canvas>
+          <div style="position:absolute;top:-6px;left:50%;transform:translateX(-50%);width:0;height:0;border-left:12px solid transparent;border-right:12px solid transparent;border-top:20px solid var(--accent);z-index:2;"></div>
+        </div>
+      </div>
+      <div id="wheel-result" style="text-align:center;font-size:26px;font-weight:900;color:var(--accent);margin-bottom:14px;min-height:34px;"></div>
+      <button class="pill-btn" onclick="wheelSpin();playClick()" data-i18n="spin_btn">Spin →</button>
+    </div>
+  </div>
+
+  <!-- ══════════════════ ROLL THE DICE ══════════════════ -->
+  <div class="screen" id="dice-home">
+    <div class="card" style="align-items:center;">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" style="text-align:center;" data-i18n="dice_title">roll the<br>dice</div>
+      <p class="body-text" style="text-align:center;" data-i18n="dice_desc">Tap a die to roll it.</p>
+      <div class="sec-label" style="align-self:center;margin-top:10px;" data-i18n="number_of_dice">Number of Dice</div>
+      <div class="counter-row" style="justify-content:center;">
+        <button class="c-btn" onclick="diceChCount(-1);playClick()">−</button>
+        <div class="c-val" id="dice-count-disp">1</div>
+        <button class="c-btn" onclick="diceChCount(1);playClick()">+</button>
+      </div>
+      <div id="dice-container" style="display:flex;flex-wrap:wrap;justify-content:center;gap:24px;margin:24px 0;"></div>
+      <div id="dice-total" style="text-align:center;font-size:15px;color:var(--gray);min-height:20px;margin-bottom:10px;"></div>
+      <button class="pill-btn" onclick="diceRollAll();playClick()" style="max-width:260px;" data-i18n="roll_all">Roll All</button>
+    </div>
+  </div>
+  <!-- ══════════════════ MAGIC 8 BALL ══════════════════ -->
+  <div class="screen" id="8ball-home">
+    <div class="card" style="align-items:center;">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" style="text-align:center;" data-i18n="ball8_title" data-i18n-html>magic 8<br>ball</div>
+      <p class="body-text" style="text-align:center;margin-bottom:24px;" data-i18n="ball8_desc">Ask a question out loud, then tap the ball.</p>
+
+      <div id="ball8-wrap" onclick="ball8Shake();playClick()" style="cursor:pointer;position:relative;width:300px;height:300px;margin:0 auto 24px;user-select:none;">
+        <svg id="ball8-svg" viewBox="0 0 300 300" width="300" height="300" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <radialGradient id="ballGrad" cx="38%" cy="32%" r="65%">
+              <stop offset="0%" stop-color="#3a3a3a"/>
+              <stop offset="60%" stop-color="#111111"/>
+              <stop offset="100%" stop-color="#000000"/>
+            </radialGradient>
+            <radialGradient id="shineGrad" cx="35%" cy="28%" r="50%">
+              <stop offset="0%" stop-color="#ffffff" stop-opacity="0.20"/>
+              <stop offset="100%" stop-color="#ffffff" stop-opacity="0"/>
+            </radialGradient>
+            <radialGradient id="windowGrad" cx="50%" cy="35%" r="65%">
+              <stop offset="0%" stop-color="#0d1433"/>
+              <stop offset="100%" stop-color="#000008"/>
+            </radialGradient>
+            <filter id="triGlow" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur stdDeviation="5" result="blur"/>
+              <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+            </filter>
+          </defs>
+
+          <!-- Main ball: center 150,150 radius 143 -->
+          <circle cx="150" cy="150" r="143" fill="url(#ballGrad)"/>
+          <circle cx="150" cy="150" r="143" fill="url(#shineGrad)"/>
+
+          <!-- Triangle: apex (150,72), base (60,212) to (240,212) — tall and wide -->
+          <polygon id="ball8-tri-bg" points="150,72 240,212 60,212" fill="url(#windowGrad)" stroke="#1a2a6e" stroke-width="2" stroke-linejoin="round"/>
+          <polygon id="ball8-tri-glow" points="150,72 240,212 60,212" fill="none" stroke="#00e5ff" stroke-width="3" stroke-linejoin="round" opacity="0" filter="url(#triGlow)"/>
+
+          <!-- 8 centered on triangle centroid: x=150, centroid-y = (72+212+212)/3 = 165 -->
+          <text id="ball8-eight" x="150" y="178" text-anchor="middle" font-size="68" font-weight="900" font-family="Inter,sans-serif" fill="white" opacity="1">8</text>
+
+          <!-- Answer text box: wide area in lower 2/3 of triangle -->
+          <!-- At y=140 triangle half-width = (212-140)/(212-72)*90 = 46px → total 92px → x=104 to x=196 -->
+          <!-- Use x=96, y=132, w=108, h=72 -->
+          <foreignObject id="ball8-answer-fo" x="96" y="132" width="108" height="74" opacity="0">
+            <div xmlns="http://www.w3.org/1999/xhtml" id="ball8-answer-text" style="width:108px;height:74px;display:flex;align-items:center;justify-content:center;text-align:center;font-family:'Inter',sans-serif;font-size:13px;font-weight:800;color:#00e5ff;line-height:1.3;letter-spacing:0.3px;text-transform:uppercase;word-break:break-word;overflow:hidden;"></div>
+          </foreignObject>
+
+          <!-- Ball rim -->
+          <circle cx="150" cy="150" r="143" fill="none" stroke="#ffffff" stroke-width="1" stroke-opacity="0.06"/>
+        </svg>
+      </div>
+
+      <div id="ball8-vibe" style="height:28px;margin-bottom:8px;font-size:12px;font-weight:700;letter-spacing:2px;text-transform:uppercase;color:var(--gray);transition:color .3s;"></div>
+      <p id="ball8-hint" class="body-text" style="text-align:center;font-size:13px;" data-i18n="ball8_hint">Tap the ball to reveal your fate.</p>
+      <button class="pill-btn" style="max-width:240px;margin-top:20px;" onclick="ball8Shake();playClick()" data-i18n="ball8_shake">Shake it</button>
+    </div>
+  </div>
+
+</div>
+
+<script>
+/* BACKGROUND — swirling concentric rings */
+(function(){
+  const cv=document.getElementById('bg-canvas');
+  const ctx=cv.getContext('2d');
+  let W,H,t=0;
+  function resize(){W=cv.width=window.innerWidth;H=cv.height=window.innerHeight;}
+  window.addEventListener('resize',resize);resize();
+  function frame(){
+    const light=document.body.classList.contains('light');
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle=light?'#e8e8e8':'#2a2a2a';
+    ctx.fillRect(0,0,W,H);
+    const cx=W/2,cy=H/2;
+    const maxR=Math.max(W,H)*0.75;
+    const rings=24;
+    const sp=0.003;
+    for(let i=0;i<rings;i++){
+      const prog=i/rings;
+      const phase=t*sp+prog*Math.PI*2.5;
+      const wobble=Math.sin(phase*1.4+i*0.35)*16;
+      const r=prog*maxR+wobble+Math.sin(t*sp*0.6+i)*9;
+      const hue=255+prog*90+Math.sin(t*sp+i)*25;
+      const alpha=light?(0.07-prog*0.002):(0.2-prog*0.007);
+      ctx.save();
+      ctx.translate(cx,cy);
+      ctx.rotate(t*sp*0.12+i*0.07);
+      ctx.scale(1,0.7+Math.sin(t*sp*0.4+i)*0.07);
+      ctx.beginPath();ctx.arc(0,0,Math.max(1,r),0,Math.PI*2);
+      ctx.restore();
+      ctx.strokeStyle=`hsla(${hue},65%,65%,${Math.max(0,alpha)})`;
+      ctx.lineWidth=1;ctx.stroke();
+    }
+    for(let i=0;i<10;i++){
+      const prog=i/10;
+      const r=prog*maxR*0.75+Math.sin(t*sp*1.3+prog*Math.PI*3)*18;
+      const hue=195+prog*55;
+      const alpha=light?0.04:0.08;
+      ctx.save();
+      ctx.translate(cx+Math.sin(t*sp*0.25)*25,cy+Math.cos(t*sp*0.18)*18);
+      ctx.rotate(-t*sp*0.09+i*0.11);
+      ctx.scale(0.88,0.62+Math.cos(t*sp*0.35+i)*0.06);
+      ctx.beginPath();ctx.arc(0,0,Math.max(1,r),0,Math.PI*2);
+      ctx.restore();
+      ctx.strokeStyle=`hsla(${hue},55%,68%,${alpha})`;
+      ctx.lineWidth=0.7;ctx.stroke();
+    }
+    t++;requestAnimationFrame(frame);
+  }
+  frame();
+})();
+
+/* CARD PARTICLES — runs on every .card across all screens */
+(function(){
+  const inited=new WeakSet();
+  function initCanvas(cv){
+    if(inited.has(cv))return;
+    const parent=cv.parentElement;
+    const w=parent.offsetWidth,h=parent.offsetHeight;
+    if(!w||!h)return; // screen not visible yet, retry later via go()
+    inited.add(cv);
+    const ctx=cv.getContext('2d');
+    cv.width=w;cv.height=h;
+    const pts=[];
+    for(let i=0;i<26;i++){
+      pts.push({
+        x:Math.random()*cv.width,
+        y:Math.random()*cv.height,
+        r:Math.random()*1.4+0.4,
+        vx:(Math.random()-.5)*0.2,
+        vy:(Math.random()-.5)*0.2,
+        alpha:Math.random()*0.3+0.05,
+      });
+    }
+    function frame(){
+      try{
+        if(cv.width!==parent.offsetWidth)cv.width=parent.offsetWidth||cv.width;
+        if(cv.height!==parent.offsetHeight)cv.height=parent.offsetHeight||cv.height;
+        ctx.clearRect(0,0,cv.width,cv.height);
+        const light=document.body.classList.contains('light');
+        pts.forEach(p=>{
+          p.x+=p.vx;p.y+=p.vy;
+          if(p.x<0)p.x=cv.width;if(p.x>cv.width)p.x=0;
+          if(p.y<0)p.y=cv.height;if(p.y>cv.height)p.y=0;
+          ctx.beginPath();ctx.arc(p.x,p.y,p.r,0,Math.PI*2);
+          ctx.fillStyle=light?`rgba(0,0,0,${p.alpha})`:`rgba(255,255,255,${p.alpha})`;
+          ctx.fill();
+        });
+      }catch(e){}
+      requestAnimationFrame(frame);
+    }
+    frame();
+  }
+  function initAllVisible(){
+    document.querySelectorAll('.card-particles-canvas').forEach(cv=>{
+      try{initCanvas(cv);}catch(e){}
+    });
+  }
+  window.initCardParticles=initAllVisible;
+  window.addEventListener('load',()=>setTimeout(initAllVisible,100));
+})();
+
+const AC=window.AudioContext||window.webkitAudioContext;
+let ac=null;
+let soundMuted=false;
+function getAC(){if(!ac)ac=new AC();return ac;}
+function playClick(){if(soundMuted)return;try{const c=getAC();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.setValueAtTime(700,c.currentTime);o.frequency.exponentialRampToValueAtTime(900,c.currentTime+0.05);g.gain.setValueAtTime(0.1,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.07);o.start();o.stop(c.currentTime+0.07);}catch(e){}}
+function playReveal(){if(soundMuted)return;try{const c=getAC();[350,550,750].forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(f,c.currentTime+i*.09);g.gain.setValueAtTime(0.1,c.currentTime+i*.09);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*.09+0.14);o.start(c.currentTime+i*.09);o.stop(c.currentTime+i*.09+0.14);});}catch(e){}}
+function playImposter(){if(soundMuted)return;try{const c=getAC();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sawtooth';o.frequency.setValueAtTime(220,c.currentTime);o.frequency.exponentialRampToValueAtTime(80,c.currentTime+0.35);g.gain.setValueAtTime(0.09,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.35);o.start();o.stop(c.currentTime+0.35);}catch(e){}}
+
+function playCardPlace(){if(soundMuted)return;try{const c=getAC();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(180,c.currentTime);o.frequency.exponentialRampToValueAtTime(90,c.currentTime+0.08);g.gain.setValueAtTime(0.13,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.09);o.start();o.stop(c.currentTime+0.09);}catch(e){}}
+
+function playWinner(){if(soundMuted)return;try{const c=getAC();[523,659,784,1047].forEach((f,i)=>{const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='triangle';o.frequency.setValueAtTime(f,c.currentTime+i*.08);g.gain.setValueAtTime(0.12,c.currentTime+i*.08);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*.08+0.22);o.start(c.currentTime+i*.08);o.stop(c.currentTime+i*.08+0.22);});}catch(e){}}
+
+function playDiceRoll(){if(soundMuted)return;try{const c=getAC();for(let i=0;i<4;i++){const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='square';const f=180+Math.random()*220;o.frequency.setValueAtTime(f,c.currentTime+i*.045);g.gain.setValueAtTime(0.045,c.currentTime+i*.045);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+i*.045+0.035);o.start(c.currentTime+i*.045);o.stop(c.currentTime+i*.045+0.035);}}catch(e){}}
+
+function playDiceLand(){if(soundMuted)return;try{const c=getAC();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(140,c.currentTime);o.frequency.exponentialRampToValueAtTime(60,c.currentTime+0.12);g.gain.setValueAtTime(0.16,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.15);o.start();o.stop(c.currentTime+0.15);}catch(e){}}
+
+function playWhoosh(){if(soundMuted)return;try{const c=getAC();const o=c.createOscillator();const g=c.createGain();o.connect(g);g.connect(c.destination);o.type='sine';o.frequency.setValueAtTime(500,c.currentTime);o.frequency.exponentialRampToValueAtTime(1400,c.currentTime+0.1);o.frequency.exponentialRampToValueAtTime(700,c.currentTime+0.18);g.gain.setValueAtTime(0.06,c.currentTime);g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.18);o.start();o.stop(c.currentTime+0.18);}catch(e){}}
+function toggleMute(){
+  soundMuted=!soundMuted;
+  document.getElementById('mute-icon-on').style.display=soundMuted?'none':'inline';
+  document.getElementById('mute-icon-off').style.display=soundMuted?'inline':'none';
+}
+
+/* THEME */
+let dark=true;
+
+/* ══════════════════════════════════════
+   i18n — ENGLISH / ARABIC
+══════════════════════════════════════ */
+let appLang='en';
+
+const I18N={
+en:{
+  // Jinxed home
+  jinxed_title:"jinxed",
+  jinxed_desc:"One player doesn't know the word. Everyone else does. The imposter has to blend in before they get caught.",
+  pick_mode:"Pick how you want to play below.",
+  online_label:"Online",
+  pass_phone_label:"Pass Phone",
+  join_label:"Join",
+  jinxed_notice:"<strong>Online Mode</strong> — everyone joins on their own phone or PC with a room code, roles revealed privately on each screen.<br/><br/><strong>Pass the Phone</strong> — one device passed around the group, each player taps their name to see their role.",
+  // Create screen
+  create_title:"create",
+  your_name:"Your Name",
+  enter_name_ph:"Enter your name",
+  number_of_players:"Number of Players",
+  player_names:"Player Names",
+  player_name_ph:"Player {n} name",
+  game_mode:"Game Mode",
+  word_mode:"Word",
+  word_mode_desc:"Describe without saying it",
+  drawing_mode:"Drawing",
+  drawing_mode_desc:"Draw blind as imposter",
+  category:"Category",
+  custom_words:"Custom Words",
+  custom_words_ph:"Pizza, Burger, Sushi, Tacos...",
+  min_3_words:"Min 3 words, comma separated",
+  words_count:"{n} words",
+  imposters:"Imposters",
+  back:"Back",
+  start_game:"Start Game →",
+  continue_arrow:"Continue →",
+  // Join screen
+  join_title:"join",
+  room_code:"Room Code",
+  join_arrow:"Join →",
+  // Lobby
+  room_code_share:"Room Code — Share This",
+  copy_invite_link:"Copy Invite Link",
+  copied:"Copied!",
+  play_style:"Play Style",
+  players_joined:"Players Joined",
+  leave_room:"Leave Room",
+  // Reveal
+  your_turn:"your turn",
+  your_turn_desc:"Tap your name to see your secret role privately. Don't show anyone.",
+  list_style:"List",
+  flip_cards_style:"Flip Cards",
+  tap_to_see_role:"Tap to see your role privately",
+  role_seen:"Role seen — pass the phone",
+  end_round_btn:"Everyone Saw Their Role — End Round",
+  tap_to_flip:"Tap to flip",
+  tap_to_view_again:"Tap to view again",
+  tap_to_flip_back:"Tap to flip back",
+  // Role card
+  imposter_title:"imposter",
+  player_title:"player",
+  imposter_hint:"You don't know the word. Listen, blend in, figure it out before they catch you.",
+  the_word_is:"The Word is",
+  the_drawing_is:"The Drawing is",
+  player_hint:"Describe it without saying the word. Find who doesn't know it.",
+  // Round over
+  round_over:"round\nover",
+  the_word_was:"The word was",
+  imposters_label:"Imposter(s)",
+  play_again:"Play Again →",
+  back_to_home:"Back to Home →",
+  home_label:"Home",
+  // What the Blank home
+  wtb_title:"what the\nblank?",
+  wtb_desc:"One player is the Judge each round — they don't play, they judge. Everyone else secretly picks an answer card to fill the blank. The Judge picks the funniest. Most points wins.",
+  wtb_notice:"<strong>Online Mode</strong> — everyone joins on their own phone or PC with a room code.<br/><br/><strong>Pass the Phone</strong> — one device passed around the group, each player picks their card on their turn.",
+  number_of_rounds:"Number of Rounds",
+  // WTB prompt reveal
+  round_of:"Round {a} of {b}",
+  the_prompt:"The Prompt",
+  judge_this_round:"Judge this round",
+  judge_waiting_note:"Pass the device. Each player taps their name privately, picks a card, then passes it on. The Judge waits.",
+  start_picking_cards:"Start Picking Cards →",
+  // WTB hand list/pick
+  your_turn_comma:"YOUR TURN,",
+  pick_card_blank:"Pick a card to fill the blank",
+  cards_style:"Cards",
+  back_to_player_list:"← Back to player list",
+  judging_not_playing:"Judge this round — judging, not playing",
+  all_cards_in:"All Cards In →",
+  // WTB voting
+  judge_picks:"Judge Picks",
+  pick_funniest:"pick the funniest answer.",
+  read_aloud_tap:"Read each answer aloud. Tap the one that wins the point.",
+  // WTB round result
+  judge_chose:"This round's Judge chose",
+  next_round_arrow:"Next Round →",
+  see_final_results:"See Final Results →",
+  // WTB final
+  game_over:"game\nover",
+  funniest_person:"The funniest person of the night is",
+  final_scoreboard:"FINAL SCOREBOARD",
+  // Wheel
+  wheel_title:"spin the\nwheel",
+  wheel_desc:"Add as many options as you want, then spin to pick one at random.",
+  add_option:"Add an Option",
+  type_something_ph:"Type something...",
+  add_btn:"Add",
+  spin_btn:"Spin →",
+  // Dice
+  dice_title:"roll the\ndice",
+  dice_desc:"Tap a die to roll it.",
+  number_of_dice:"Number of Dice",
+  roll_all:"Roll All",
+  total_label:"Total: {n}",
+  // Dynamic JS strings
+  word_mode_full:"Word Game",
+  drawing_mode_full:"Drawing Game",
+  you:"you",
+  none:"None",
+  role_seen:"Role seen — pass the phone",
+  end_round_btn:"Everyone Saw Their Role — End Round",
+  imposter_hint:"You don't know the word. Listen, blend in, figure it out before they catch you.",
+  player_hint:"Describe it without saying the word. Find who doesn't know it.",
+  the_word_is:"The Word is",
+  the_drawing_is:"The Drawing is",
+  judge_waiting_detail:"{name} doesn't pick a card this round — they judge. {n} players need to submit.",
+  card_submitted:"Card submitted — pass the phone",
+  tap_to_pick:"Tap to pick your card",
+  all_cards_in_btn:"All Cards In — {name}, it's your turn to judge →",
+  pick_lbl:"Pick",
+  pt_singular:"pt",
+  pt_plural:"pts",
+  final_round_complete:"Final round complete!",
+  next_judge_preview:"Next round: {name} will be the Judge.",
+  // 18+
+  badge_18:"18+",
+  // Game screen
+  all_roles:"All Roles",
+  category_lbl:"Category",
+  end_round:"End Round",
+  everyone_knows:"Everyone knows this — except the imposter(s).",
+  mode_lbl:"Mode",
+  round_of_label:"Round",
+  of_connector:"of",
+  scoreboard_lbl:"Scoreboard",
+  settings_lbl:"Settings",
+  waiting_host:"Waiting for the host to start…",
+  winner_title:"winner!",
+  nav_jinxed:"Jinxed",
+  nav_wtb:"What the Blank?",
+  nav_wheel:"Spin the Wheel",
+  nav_dice:"Roll the Dice",
+  nav_8ball:"Magic 8 Ball",
+  ball8_title:"magic 8<br>ball",
+  ball8_desc:"Ask a question out loud, then tap the ball.",
+  ball8_hint:"Tap the ball to reveal your fate.",
+  ball8_shake:"Shake it",
+  ball8_vibe_yes:"Looks good ✦",
+  ball8_vibe_maybe:"Hmm... ✦",
+  ball8_vibe_no:"Yikes ✦",
+  need_3_players:"Need at least 3 players.",
+  need_3_players_diff:"Need at least 3 different player names.",
+  need_3_to_start:"Need at least 3 players to start.",
+  cat_random:"Random",
+  wtb_start_game:"Start Game →",
+  wtb_waiting_players:"Waiting for players...",
+  enter_name_err:"Enter your name first.",
+  enter_name_err2:"Enter your name.",
+  pick_funniest_inline:", pick the funniest answer.",
+  custom_words_err:"Add at least 3 custom words.",
+  custom_words_err2:"Add at least 3 custom words first.",
+  too_many_imposters:"Too many imposters for player count.",
+  too_many_imposters2:"Too many imposters.",
+  enter_room_code:"Enter the room code.",
+  room_not_found:"Room not found. Check the code.",
+  game_already_started:"Game already started.",
+},
+ar:{
+  jinxed_title:"جنكسد",
+  jinxed_desc:"لاعب واحد لا يعرف الكلمة. الجميع غيره يعرفها. على الدخيل الاندماج قبل أن يُكتشف.",
+  pick_mode:"اختر طريقة اللعب من الأسفل.",
+  online_label:"أونلاين",
+  pass_phone_label:"تمرير الجوال",
+  join_label:"انضمام",
+  jinxed_notice:"<strong>الوضع الأونلاين</strong> — ينضم الجميع من جهازهم الخاص برمز الغرفة، ويظهر الدور بشكل خاص لكل شخص.<br/><br/><strong>تمرير الجوال</strong> — جهاز واحد يمرّ بين اللاعبين، كل لاعب يضغط على اسمه ليرى دوره.",
+  create_title:"إنشاء",
+  your_name:"اسمك",
+  enter_name_ph:"أدخل اسمك",
+  number_of_players:"عدد اللاعبين",
+  player_names:"أسماء اللاعبين",
+  player_name_ph:"اسم اللاعب {n}",
+  game_mode:"نمط اللعبة",
+  word_mode:"كلمة",
+  word_mode_desc:"صف الكلمة دون ذكرها",
+  drawing_mode:"رسم",
+  drawing_mode_desc:"الدخيل يرسم بشكل أعمى",
+  category:"الفئة",
+  custom_words:"كلمات مخصصة",
+  custom_words_ph:"بيتزا، برغر، سوشي، تاكو...",
+  min_3_words:"3 كلمات على الأقل، مفصولة بفاصلة",
+  words_count:"{n} كلمات",
+  imposters:"عدد الدخلاء",
+  back:"رجوع",
+  start_game:"ابدأ اللعبة ←",
+  continue_arrow:"متابعة ←",
+  join_title:"انضمام",
+  room_code:"رمز الغرفة",
+  join_arrow:"انضمام ←",
+  room_code_share:"رمز الغرفة — شاركه",
+  copy_invite_link:"نسخ رابط الدعوة",
+  copied:"تم النسخ!",
+  play_style:"طريقة اللعب",
+  players_joined:"اللاعبون المنضمون",
+  leave_room:"مغادرة الغرفة",
+  your_turn:"دورك",
+  your_turn_desc:"اضغط على اسمك لترى دورك سراً. لا تُظهره لأحد.",
+  list_style:"قائمة",
+  flip_cards_style:"بطاقات",
+  tap_to_see_role:"اضغط لترى دورك سراً",
+  role_seen:"تمت رؤية الدور — مرر الجوال",
+  end_round_btn:"الجميع رأى دوره — إنهاء الجولة",
+  tap_to_flip:"اضغط للقلب",
+  tap_to_view_again:"اضغط للعرض مجدداً",
+  tap_to_flip_back:"اضغط للقلب للخلف",
+  imposter_title:"الدخيل",
+  player_title:"لاعب",
+  imposter_hint:"أنت لا تعرف الكلمة. استمع، اندمج، واكتشفها قبل أن يُمسكوا بك.",
+  the_word_is:"الكلمة هي",
+  the_drawing_is:"الرسمة هي",
+  player_hint:"صفها دون ذكر الكلمة. اكتشف من لا يعرفها.",
+  round_over:"الجولة\nانتهت",
+  the_word_was:"كانت الكلمة",
+  imposters_label:"الدخيل/الدخلاء",
+  play_again:"العب مجدداً ←",
+  back_to_home:"العودة للرئيسية ←",
+  home_label:"الرئيسية",
+  wtb_title:"وات ذا\nبلانك؟",
+  wtb_desc:"لاعب واحد يكون القاضي في كل جولة — لا يلعب، بل يحكم. الجميع غيره يختار بطاقة إجابة سراً لملء الفراغ. القاضي يختار الأطرف. الأعلى نقاطاً يفوز.",
+  wtb_notice:"<strong>الوضع الأونلاين</strong> — ينضم الجميع من جهازهم الخاص برمز الغرفة.<br/><br/><strong>تمرير الجوال</strong> — جهاز واحد يمرّ بين اللاعبين، كل لاعب يختار بطاقته في دوره.",
+  number_of_rounds:"عدد الجولات",
+  round_of:"الجولة {a} من {b}",
+  the_prompt:"السؤال",
+  judge_this_round:"قاضي هذه الجولة",
+  judge_waiting_note:"مرر الجهاز. كل لاعب يضغط على اسمه سراً، يختار بطاقة، ثم يمررها. القاضي ينتظر.",
+  start_picking_cards:"ابدأ اختيار البطاقات ←",
+  your_turn_comma:"دورك،",
+  pick_card_blank:"اختر بطاقة لملء الفراغ",
+  cards_style:"بطاقات",
+  back_to_player_list:"← العودة لقائمة اللاعبين",
+  judging_not_playing:"قاضي هذه الجولة — يحكم، لا يلعب",
+  all_cards_in:"كل البطاقات وصلت ←",
+  judge_picks:"القاضي يختار",
+  pick_funniest:"اختر الإجابة الأطرف.",
+  read_aloud_tap:"اقرأ كل إجابة بصوت عالٍ. اضغط على الفائزة بالنقطة.",
+  judge_chose:"قاضي هذه الجولة اختار",
+  next_round_arrow:"الجولة التالية ←",
+  see_final_results:"عرض النتائج النهائية ←",
+  game_over:"انتهت\nاللعبة",
+  funniest_person:"أطرف شخص الليلة هو",
+  final_scoreboard:"لوحة النتائج النهائية",
+  nav_jinxed:"جنكسد",
+  nav_wtb:"وات ذا بلانك؟",
+  nav_wheel:"أدر العجلة",
+  nav_dice:"ارمِ النرد",
+  nav_8ball:"الكرة السحرية",
+  ball8_title:"الكرة<br>السحرية",
+  ball8_desc:"اطرح سؤالك بصوت عالٍ، ثم اضغط على الكرة.",
+  ball8_hint:"اضغط على الكرة لتكشف مصيرك.",
+  ball8_shake:"هزّها",
+  ball8_vibe_yes:"يبدو جيداً ✦",
+  ball8_vibe_maybe:"ممم... ✦",
+  ball8_vibe_no:"أوف ✦",
+  need_3_players:"تحتاج على الأقل 3 لاعبين.",
+  need_3_players_diff:"تحتاج على الأقل 3 أسماء مختلفة.",
+  need_3_to_start:"تحتاج على الأقل 3 لاعبين للبدء.",
+  cat_random:"عشوائي",
+  wtb_start_game:"ابدأ اللعبة ←",
+  wtb_waiting_players:"في انتظار اللاعبين...",
+  enter_name_err:"أدخل اسمك أولاً.",
+  enter_name_err2:"أدخل اسمك.",
+  pick_funniest_inline:"، اختر الإجابة الأطرف.",
+  custom_words_err:"أضف على الأقل 3 كلمات مخصصة.",
+  custom_words_err2:"أضف على الأقل 3 كلمات مخصصة أولاً.",
+  too_many_imposters:"عدد الدخلاء أكثر من اللاعبين.",
+  too_many_imposters2:"عدد الدخلاء أكثر من اللاعبين.",
+  enter_room_code:"أدخل رمز الغرفة.",
+  room_not_found:"الغرفة غير موجودة. تحقق من الرمز.",
+  game_already_started:"اللعبة بدأت بالفعل.",
+  wheel_title:"أدر\nالعجلة",
+  wheel_desc:"أضف أي عدد من الخيارات، ثم أدر العجلة لاختيار واحد عشوائياً.",
+  add_option:"أضف خياراً",
+  type_something_ph:"اكتب شيئاً...",
+  add_btn:"إضافة",
+  spin_btn:"أدر ←",
+  dice_title:"ارمِ\nالنرد",
+  dice_desc:"اضغط على النرد لرميه.",
+  number_of_dice:"عدد النرد",
+  roll_all:"ارمِ الكل",
+  total_label:"المجموع: {n}",
+  badge_18:"+18",
+  all_roles:"جميع الأدوار",
+  category_lbl:"الفئة",
+  end_round:"إنهاء الجولة",
+  everyone_knows:"الجميع يعرف الكلمة — إلا المتسللين.",
+  mode_lbl:"النمط",
+  round_of_label:"الجولة",
+  of_connector:"من",
+  scoreboard_lbl:"لوحة النتائج",
+  settings_lbl:"الإعدادات",
+  waiting_host:"في انتظار المضيف للبدء…",
+  winner_title:"فائز!",
+  // Dynamic JS strings
+  word_mode_full:"لعبة كلمات",
+  drawing_mode_full:"لعبة رسم",
+  you:"أنت",
+  none:"لا أحد",
+  role_seen:"تمّ رؤية الدور — مرّر الجهاز",
+  end_round_btn:"الجميع رأى دوره — إنهاء الجولة",
+  imposter_hint:"أنت لا تعرف الكلمة. استمع، اندمج، واكتشفها قبل أن يمسكوك.",
+  player_hint:"صفها دون أن تقولها. اكشف من لا يعرفها.",
+  the_word_is:"الكلمة هي",
+  the_drawing_is:"الرسمة هي",
+  judge_waiting_detail:"{name} لا يختار بطاقة هذه الجولة — هو الحكم. {n} لاعبين بحاجة للإجابة.",
+  card_submitted:"تمّ اختيار البطاقة — مرّر الجهاز",
+  tap_to_pick:"اضغط لاختيار بطاقتك",
+  all_cards_in_btn:"كل البطاقات جاهزة — {name}، دورك للحكم →",
+  pick_lbl:"اختر",
+  pt_singular:"نقطة",
+  pt_plural:"نقاط",
+  final_round_complete:"انتهت الجولة الأخيرة!",
+  next_judge_preview:"الجولة القادمة: {name} سيكون الحكم.",
+},
+};
+
+function t(key,vars){
+  let str=(I18N[appLang]&&I18N[appLang][key])||I18N.en[key]||key;
+  if(vars)Object.keys(vars).forEach(k=>{str=str.replace('{'+k+'}',vars[k]);});
+  return str;
+}
+
+function toggleLang(){
+  appLang=appLang==='en'?'ar':'en';
+  document.getElementById('lang-btn-text').textContent=appLang==='en'?'AR':'EN';
+  applyLanguage();
+  playClick();
+}
+
+function applyLanguage(){
+  const isAr=appLang==='ar';
+  document.documentElement.classList.toggle('rtl',isAr);
+  document.documentElement.dir=isAr?'rtl':'ltr';
+  document.body.classList.toggle('lang-ar',isAr);
+  document.querySelectorAll('[data-i18n]').forEach(el=>{
+    const key=el.getAttribute('data-i18n');
+    const val=t(key);
+    if(el.hasAttribute('data-i18n-html'))el.innerHTML=val;
+    else el.textContent=val;
+  });
+  document.querySelectorAll('[data-i18n-ph]').forEach(el=>{
+    el.placeholder=t(el.getAttribute('data-i18n-ph'));
+  });
+  // Re-render any dynamic content for the currently visible screen
+  if(typeof refreshDynamicLanguage==='function')refreshDynamicLanguage();
+}
+
+function refreshDynamicLanguage(){
+  const active=document.querySelector('.screen.active');
+  if(!active)return;
+  const id=active.id;
+  // Always rebuild category grid if create screen is visible
+  if(id==='s-create')buildCatGrid();
+  // Jinxed screens
+  else if(id==='s-lobby')renderLobby();
+  else if(id==='s-reveal')renderReveal();
+  else if(id==='s-game')showGame();
+  // WTB screens
+  else if(id==='wtb-hand-list')wtbRenderHandList();
+  else if(id==='wtb-hand-pick'&&wtbCurrentHandPlayer)wtbRenderHand(wtbCurrentHandPlayer);
+  else if(id==='wtb-prompt-reveal')wtbRenderHandList();
+  else if(id==='wtb-voting')wtbShowJudging();
+  else if(id==='wtb-final')wtbShowFinal();
+  else if(id==='wtb-create'){
+    const btn=document.getElementById('wtb-start-btn');
+    if(btn&&btn.dataset.state==='waiting')btn.textContent=t('wtb_waiting_players');
+    else if(btn)btn.textContent=t('wtb_start_game');
+  }
+  // Dice total
+  else if(id==='dice-home')diceUpdateTotal();
+  else if(id==='8ball-home')ball8Init();
+}
+function toggleTheme(){
+  dark=!dark;
+  document.body.classList.toggle('light',!dark);
+  document.getElementById('theme-icon-dark').style.display=dark?'inline':'none';
+  document.getElementById('theme-icon-light').style.display=dark?'none':'inline';
+  playClick();
+}
+
+/* WORD LISTS */
+const WCAT={
+  'Random':null,
+  'Anime Characters':['Naruto','Goku','Luffy','Eren Yeager','Levi Ackerman','Itachi','Sasuke','Light Yagami','L Lawliet','Edward Elric','Killua','Gon','Rem','Nezuko','Tanjiro','Zero Two','Mikasa','Saitama','Todoroki','Midoriya','Bakugo','Kakashi','Madara','Vegeta','Gohan','Ichigo'],
+  'Marvel & DC':['Spider-Man','Iron Man','Thor','Hulk','Black Widow','Captain America','Doctor Strange','Black Panther','Thanos','Loki','Venom','Wolverine','Deadpool','Batman','Superman','Wonder Woman','The Joker','Harley Quinn','Aquaman','The Flash','Magneto','Wanda Maximoff','Groot','Carnage','Daredevil','Green Goblin'],
+  'Events':['World Cup','Olympics','Super Bowl','Grammys','Oscars','Tour de France','Wimbledon','Eurovision','Met Gala','Coachella','Comic-Con','World War II','Moon Landing','COVID Pandemic','Black Friday','Cannes Film Festival','Formula 1','Champions League Final','NBA Finals','Burning Man'],
+  'Holidays':['Christmas','Halloween','New Year\'s Eve','Ramadan','Eid','Thanksgiving','Valentine\'s Day','Easter','Hanukkah','Diwali','Holi','Mardi Gras','St. Patrick\'s Day','April Fools\'','Mother\'s Day','Father\'s Day','Independence Day','Chinese New Year','Nowruz','Bonfire Night','Carnival','Pride Month','Labor Day','Day of the Dead'],
+  'Video Games':['Minecraft','Fortnite','Call of Duty','GTA V','Zelda','Red Dead Redemption','The Witcher','Elden Ring','Dark Souls','Cyberpunk 2077','Valorant','League of Legends','Overwatch','Apex Legends','FIFA','Halo','God of War','Last of Us','Resident Evil','Among Us','Rocket League','Counter-Strike','PUBG','Genshin Impact','Skyrim'],
+  'Celebrities':['Cristiano Ronaldo','Lionel Messi','LeBron James','Elon Musk','Kim Kardashian','Taylor Swift','Beyoncé','Drake','Nicki Minaj','The Rock','Tom Cruise','Will Smith','Rihanna','Justin Bieber','Ariana Grande','Billie Eilish','Zendaya','Kanye West','Eminem','Jeff Bezos','Kylian Mbappé','Kendrick Lamar','The Weeknd','Post Malone','Travis Scott','Ed Sheeran','Bruno Mars','Lady Gaga','Adele','Coldplay','Metallica','The Beatles','Michael Jackson','Bob Marley','Bad Bunny','Dua Lipa','Shakira'],
+  'Countries':['Brazil','Japan','Germany','France','United States','United Kingdom','Australia','Canada','India','China','Russia','South Africa','Mexico','Argentina','Egypt','Saudi Arabia','UAE','Nigeria','South Korea','Italy','Spain','Portugal','Netherlands','Sweden','Turkey','Greece'],
+  'Music':['Hip-Hop','Pop','Rock','Jazz','Classical','R&B','Electronic','Reggae','Country','Metal','Punk','Blues','Soul','Funk','House','Techno','Trap','Lo-Fi','Indie','Alternative','Gospel','K-Pop','Afrobeats','Dubstep'],
+  'Brands':['Nike','Adidas','Apple','Google','McDonald\'s','Coca-Cola','Pepsi','Samsung','Amazon','Netflix','Disney','Gucci','Louis Vuitton','Rolex','Ferrari','Tesla','Starbucks','Puma','IKEA','Lego','Spotify','PlayStation','Xbox','Chanel'],
+  'Food & Snacks':['Pizza','Burger','Sushi','Taco','Ramen','Pasta','Fried Chicken','Hot Dog','Nachos','Burrito','Shawarma','Dim Sum','Steak','Lobster','Ice Cream','Cheesecake','Donut','Brownie','Waffle','Croissant','Churros','Baklava','Cookie','Macarons','Popcorn','Chips','Gummy Bears','Cotton Candy','Chocolate Bar','Pretzels'],
+  'Accessories':['AirPods','Gaming Headset','Gaming Mouse','Mechanical Keyboard','PS5 Controller','Xbox Controller','Nintendo Switch','Apple Watch','Rolex','Ray-Bans','Snapback','Beanie','Scarf','Belt','Wallet','Backpack','Fanny Pack','Gold Chain','Fitbit','GoPro'],
+  'Sports':['Football','Basketball','Tennis','Golf','Boxing','MMA','Soccer','Baseball','Cricket','Rugby','Volleyball','Skateboarding','Surfing','Snowboarding','Wrestling','Gymnastics','Cycling','Swimming','Table Tennis','Badminton','Ice Hockey','Archery','Rock Climbing','Karate'],
+  'Custom':null,
+};
+const DCAT={
+  'Random':null,
+  'Mammals':['Elephant','Giraffe','Lion','Tiger','Bear','Dog','Cat','Horse','Dolphin','Whale','Monkey','Gorilla','Panda','Zebra','Hippo','Rhino','Cheetah','Kangaroo','Koala','Fox','Wolf','Deer','Rabbit','Bat'],
+  'Food':['Pizza','Burger','Sushi','Taco','Hotdog','Ice Cream','Cake','Donut','Apple','Banana','Watermelon','Carrot','Sandwich','Pasta','Ramen','Fries','Popcorn','Cookie','Cupcake'],
+  'Furniture':['Chair','Table','Sofa','Bed','Wardrobe','Desk','Shelf','Lamp','Mirror','Bathtub','Toilet','Sink','Fridge','Oven','Microwave','Fan','Bookcase'],
+  'Weapons':['Sword','Shield','Bow','Axe','Spear','Dagger','Cannon','Pistol','Rifle','Grenade','Crossbow','Catapult','Trident','Hammer','Nunchucks','Boomerang','Slingshot'],
+  'Nature':['Mountain','Volcano','River','Waterfall','Tree','Flower','Cactus','Cloud','Lightning','Rainbow','Sun','Moon','Wave','Island','Cave','Glacier','Desert','Tornado','Forest'],
+  'Vehicles':['Car','Truck','Boat','Plane','Rocket','Helicopter','Submarine','Train','Bicycle','Motorcycle','Bus','Spaceship','Hot Air Balloon','Yacht','Jet Ski','Skateboard','Tank','Ambulance'],
+  'Clothing':['Hat','Cap','Sunglasses','Watch','Ring','Necklace','Sneakers','Boots','Dress','Jacket','Hoodie','Tie','Belt','Scarf','Gloves','Backpack','Purse','Bracelet','Crown'],
+  'Emotions':['Happy','Sad','Angry','Surprised','Scared','Disgusted','Confused','Excited','Bored','Tired','Nervous','Proud','Jealous','Shy','Love','Shocked','Embarrassed','Lonely','Grateful'],
+  'Brands':['Nike Swoosh','Adidas Stripes','Apple Logo','McDonald\'s Arches','Starbucks Logo','Coca-Cola Logo','Pepsi Logo','Puma Logo','Mercedes Logo','BMW Logo','Instagram Logo','Spotify Logo','Netflix Logo','Chanel Logo','Louis Vuitton Logo','Lego Logo','Amazon Logo','Snapchat Ghost','Twitter Bird','Playboy Bunny'],
+  'Cartoon Characters':['SpongeBob','Patrick Star','Bugs Bunny','Tom','Jerry','Scooby-Doo','Mickey Mouse','Donald Duck','Tweety','Sylvester','Daffy Duck','Popeye','Fred Flintstone','Homer Simpson','Bart Simpson','Stewie Griffin','Shaggy','Perry the Platypus','Dexter','Johnny Bravo','Goofy','Pluto','Garfield','Yogi Bear'],
+  'Accessories':['AirPods','Gaming Headset','Snapback','Beanie','Scarf','Belt','Backpack','Fanny Pack','Bracelet','Gold Chain','Earrings','Watch','Ring','Sunglasses','Gaming Controller','Headphones','GoPro','Wallet','Tie','Crown'],
+  'Instruments':['Guitar','Piano','Violin','Drums','Trumpet','Saxophone','Flute','Ukulele','Harp','Trombone','Accordion','Banjo','Bongo Drums','Harmonica','Cello','Keyboard','Bass Guitar','Bagpipes','Xylophone','Theremin'],
+  'Custom':null,
+};
+
+/* ══ ARABIC WORD CATEGORIES ══ */
+const WCAT_AR={
+  'Random':null,
+  'Anime Characters':['ناروتو','غوكو','لوفي','إيرين','ليفي','إيتاشي','ساسوكي','لايت','إل','إدوارد','كيلوا','غون','ريم','نيزوكو','تانجيرو','زيرو تو','ميكاسا','سايتاما','تودوروكي','ميدوريا','باكوغو','كاكاشي','مادارا','فيجيتا','غوهان','إيتشيغو'],
+  'Marvel & DC':['سبايدر مان','آيرون مان','ثور','هالك','الأرملة السوداء','كابتن أمريكا','دكتور سترينج','الفهد الأسود','ثانوس','لوكي','فينوم','ولفرين','ديدبول','باتمان','سوبرمان','وندر وومان','الجوكر','هارلي كوين','أكوامان','الفلاش','ماغنيتو','واندا','غروت','كارنيدج','دير ديفل','العفريت الأخضر'],
+  'Events':['كأس العالم','الأولمبياد','السوبر بول','حفل الغرامي','حفل الأوسكار','سباق تور دو فرانس','ويمبلدون','يوروفيجن','ميت غالا','كوتشيلا','كوميك كون','الحرب العالمية الثانية','هبوط القمر','جائحة كورونا','الجمعة السوداء','مهرجان كان','الفورمولا 1','نهائي دوري أبطال أوروبا','نهائي NBA','بيرنينغ مان'],
+  'Holidays':['عيد الميلاد','الهالووين','ليلة رأس السنة','رمضان','عيد الفطر','عيد الأضحى','عيد الشكر','عيد الحب','عيد الفصح','عيد هانوكا','ديوالي','هولي','ماردي غرا','عيد القديس باتريك','كذبة أبريل','عيد الأم','عيد الأب','يوم الاستقلال','رأس السنة الصينية','النوروز','ليلة الشعلة','كرنفال','شهر الفخر','يوم العمال'],
+  'Video Games':['ماينكرافت','فورتنايت','كول أوف ديوتي','جي تي إيه','زيلدا','ريد ديد ريدمبشن','ذا ويتشر','إيلدن رينغ','دارك سولز','سايبربانك','فالورانت','ليغ أوف ليجندز','أوفر ووتش','أبيكس ليجندز','فيفا','هالو','غود أوف وور','لاست أوف أس','ريزيدنت إيفل','أمونغ أس','روكيت ليغ','كاونتر سترايك','ببجي','غينشين إمباكت','سكايريم'],
+  'Celebrities':['رونالدو','ميسي','ليبرون جيمس','إيلون ماسك','كيم كارداشيان','تايلور سويفت','بيونسيه','درايك','نيكي مينيج','ذا روك','توم كروز','ويل سميث','ريهانا','جاستن بيبر','أريانا غراندي','بيلي آيليش','زندايا','كانيي ويست','إيمينيم','جيف بيزوس','مبابي','كندريك لامار','ذا ويكند','بوست مالون','ترافيس سكوت','إد شيران','برونو مارس','ليدي غاغا','أديل','كولدبلاي','ميتاليكا','البيتلز','مايكل جاكسون','بوب مارلي','باد باني','دوا ليبا','شاكيرا'],
+  'Countries':['البرازيل','اليابان','ألمانيا','فرنسا','الولايات المتحدة','المملكة المتحدة','أستراليا','كندا','الهند','الصين','روسيا','جنوب أفريقيا','المكسيك','الأرجنتين','مصر','السعودية','الإمارات','نيجيريا','كوريا الجنوبية','إيطاليا','إسبانيا','البرتغال','هولندا','السويد','تركيا','اليونان'],
+  'Music':['هيب هوب','بوب','روك','جاز','كلاسيكية','آر أند بي','إلكترونية','ريغي','كانتري','ميتال','بانك','بلوز','سول','فانك','هاوس','تكنو','تراب','لو-فاي','إندي','ألترناتيف','غوسبل','كي بوب','أفروبيتس','دبستيب'],
+  'Brands':['نايكي','أديداس','آبل','غوغل','ماكدونالدز','كوكاكولا','بيبسي','سامسونغ','أمازون','نتفليكس','ديزني','غوتشي','لويس فيتون','رولكس','فيراري','تيسلا','ستاربكس','بوما','إيكيا','ليغو','سبوتيفاي','بلاي ستيشن','إكس بوكس','شانيل'],
+  'Food & Snacks':['بيتزا','برغر','سوشي','تاكو','رامن','باستا','دجاج مقلي','هوت دوغ','ناتشوز','بوريتو','شاورما','ديم سام','ستيك','لوبستر','آيس كريم','تشيز كيك','دونات','براوني','وافل','كرواسان','تشوروس','بقلاوة','بسكويت','ماكارون','فشار','رقائق','دببة الجيلي','غزل البنات','شوكولاتة','بريتزل'],
+  'Accessories':['إيربودز','سماعة ألعاب','ماوس ألعاب','كيبورد ميكانيكي','يد تحكم PS5','يد تحكم Xbox','نينتندو سويتش','آبل ووتش','رولكس','نظارات راي-بان','كاب بيسبول','قبعة بيني','وشاح','حزام','محفظة','حقيبة ظهر','حقيبة خصر','سلسلة ذهبية','فيت بيت','غو برو'],
+  'Sports':['فوتبول أمريكي','كرة سلة','تنس','غولف','ملاكمة','فنون قتالية مختلطة','كرة القدم','بيسبول','كريكيت','ركبي','كرة طائرة','سكيتبورد','ركوب الأمواج','التزلج على الثلج','مصارعة','جمباز','دراجات','سباحة','تنس طاولة','ريشة','هوكي الجليد','رماية','تسلق','كاراتيه'],
+  'Custom':null,
+};
+
+/* ══ ARABIC DRAWING CATEGORIES ══ */
+const DCAT_AR={
+  'Random':null,
+  'Mammals':['فيل','زرافة','أسد','نمر','دب','كلب','قطة','حصان','دولفين','حوت','قرد','غوريلا','باندا','حمار وحشي','فرس النهر','وحيد القرن','فهد','كنغر','كوالا','ثعلب','ذئب','غزال','أرنب','خفاش'],
+  'Food':['بيتزا','برغر','سوشي','تاكو','هوت دوغ','آيس كريم','كيك','دونات','تفاحة','موزة','بطيخ','جزرة','ساندويتش','باستا','رامن','بطاطس مقلية','فشار','بسكويت','كب كيك'],
+  'Furniture':['كرسي','طاولة','أريكة','سرير','خزانة','مكتب','رف','مصباح','مرآة','حوض استحمام','مرحاض','حوض','ثلاجة','فرن','ميكروويف','مروحة','مكتبة'],
+  'Weapons':['سيف','درع','قوس','فأس','رمح','خنجر','مدفع','مسدس','بندقية','قنبلة','قوس ونشاب','منجنيق','ثلاثي الشعب','مطرقة','نونتشاكو','بوميرانغ','مقلاع'],
+  'Nature':['جبل','بركان','نهر','شلال','شجرة','زهرة','صبار','سحابة','برق','قوس قزح','شمس','قمر','موجة','جزيرة','كهف','جليد','صحراء','إعصار','غابة'],
+  'Vehicles':['سيارة','شاحنة','قارب','طائرة','صاروخ','مروحية','غواصة','قطار','دراجة','دراجة نارية','حافلة','مركبة فضائية','منطاد','يخت','جت سكي','لوح تزلج','دبابة','سيارة إسعاف'],
+  'Clothing':['قبعة','كاب','نظارات شمسية','ساعة','خاتم','عقد','حذاء رياضي','بوت','فستان','جاكيت','هودي','ربطة عنق','حزام','وشاح','قفازات','حقيبة ظهر','حقيبة يد','سوار','تاج'],
+  'Emotions':['سعيد','حزين','غاضب','مندهش','خائف','مشمئز','محتار','متحمس','ملول','متعب','قلق','فخور','غيور','خجول','حب','مصدوم','محرج','وحيد','ممتن'],
+  'Brands':['شعار نايكي','شريط أديداس','شعار آبل','أقواس ماكدونالدز','شعار ستاربكس','شعار كوكاكولا','شعار بيبسي','شعار بوما','شعار مرسيدس','شعار BMW','شعار إنستغرام','شعار سبوتيفاي','شعار نتفليكس','شعار شانيل','شعار لويس فيتون','شعار ليغو','شعار أمازون','شبح سناب شات','طائر تويتر','أرنب بلاي بوي'],
+  'Cartoon Characters':['سبونج بوب','باتريك','باغز باني','توم','جيري','سكوبي دو','ميكي ماوس','دونالد داك','تويتي','سيلفستر','دافي داك','بوباي','فريد فلينستون','هومر سيمبسون','بارت سيمبسون','ستيوي غريفين','شاغي','بيري البلاتيبوس','ديكستر','جوني برافو','غوفي','بلوتو','غارفيلد','يوغي بير'],
+  'Accessories':['إيربودز','سماعة ألعاب','كاب','بيني','وشاح','حزام','حقيبة ظهر','حقيبة خصر','سوار','سلسلة ذهبية','أقراط','ساعة','خاتم','نظارات شمسية','يد تحكم','سماعات','غو برو','محفظة','ربطة عنق','تاج'],
+  'Instruments':['غيتار','بيانو','كمان','طبول','ترومبيت','ساكسوفون','فلوت','أوكليلي','هارب','ترومبون','أكورديون','بانجو','بونغو','هارمونيكا','تشيلو','كيبورد','باس غيتار','مزمار قرب','زيلوفون','ثيريمين'],
+  'Custom':null,
+};
+const CAT_ICONS={'Random':'🎲','Anime Characters':'⚔️','Marvel & DC':'🦸','Events':'🎉','Holidays':'🎄','Video Games':'🎮','Celebrities':'⭐','Countries':'🌍','Music':'🎵','Brands':'🏷️','Food & Snacks':'🍔','Accessories':'⌚','Sports':'⚽','Mammals':'🐘','Food':'🍕','Furniture':'🛋️','Weapons':'🗡️','Nature':'🌿','Vehicles':'🚀','Clothing':'👗','Emotions':'😊','Cartoon Characters':'🎬','Instruments':'🎸','Custom':'✏️'};
+const CAT_DESCS={
+  'Random':'Mix of all categories',
+  'Anime Characters':'Icons from popular anime',
+  'Marvel & DC':'Heroes and villains',
+  'Events':'Global moments & pop culture',
+  'Holidays':'Celebrations around the world',
+  'Video Games':'Popular titles & franchises',
+  'Celebrities':'Famous faces from all fields',
+  'Countries':'Nations around the world',
+  'Music':'Genres and musical styles',
+  'Brands':'Global logos & companies',
+  'Food & Snacks':'Dishes, sweets & munchies',
+  'Accessories':'Gadgets, gear & wearables',
+  'Sports':'Games & athletic disciplines',
+  'Mammals':'Animals to describe',
+  'Food':'Tasty things to draw',
+  'Furniture':'Household objects',
+  'Weapons':'Blades, guns & gadgets',
+  'Nature':'The great outdoors',
+  'Vehicles':'Things that move',
+  'Clothing':'Fashion & style',
+  'Emotions':'Feelings & expressions',
+  'Cartoon Characters':'Animated icons',
+  'Instruments':'Musical gear to sketch',
+  'Custom':'Your own words',
+};
+
+/* ═══════ JINXED CORE ENGINE ═══════ */
+
+/* STATE */
+let S={name:'',pid:null,code:null,isHost:false,mode:'word',cat:'Random',imps:1,players:[],word:'',roles:{},revealed:new Set(),playMode:'phone'};
+
+/* ── ROOM — single source of truth for current game state ── */
+let ROOM=null;
+function newRoom(overrides){
+  return {
+    code:null,
+    mode:S.mode,
+    cat:S.cat,
+    imps:S.imps,
+    players:[],
+    started:false,
+    word:'',
+    roles:{},
+    ...overrides,
+  };
+}
+
+/* ── SUPABASE ─────────────────────────────────────────────── */
+const SUPA_URL='https://xtlhoyxvuldlyolcjecc.supabase.co';
+const SUPA_KEY='eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Inh0bGhveXh2dWxkbHlvbGNqZWNjIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODI2MjcwMDIsImV4cCI6MjA5ODIwMzAwMn0.o-AJ-xVf-XR5YyjfjXJx21dH06gPyooqElrIcwCcNXw';
+const sb=supabase.createClient(SUPA_URL,SUPA_KEY);
+let supaChannel=null;
+
+// Push new room to Supabase
+async function onlineCreateRoom(room){
+  const {error}=await sb.from('rooms').insert({
+    code:room.code,
+    game:'jinxed',
+    mode:room.mode,
+    cat:room.cat,
+    imps:room.imps,
+    players:room.players,
+    started:false,
+    word:'',
+    roles:{},
+  });
+  if(error){console.error('Create room error:',error);return;}
+  subscribeRoom(room.code);
+}
+
+// Fetch room from Supabase and subscribe
+async function onlineJoinRoom(code,player){
+  const {data,error}=await sb.from('rooms').select('*').eq('code',code).single();
+  if(error||!data){err('j-err',t('room_not_found'));return;}
+  if(data.started){err('j-err',t('game_already_started'));return;}
+  // Add player to room
+  const players=[...data.players,player];
+  await sb.from('rooms').update({players}).eq('code',code);
+  // Hydrate local ROOM from Supabase data
+  ROOM=newRoom({
+    code:data.code,
+    mode:data.mode,
+    cat:data.cat,
+    imps:data.imps,
+    players,
+    started:data.started,
+    word:data.word,
+    roles:data.roles,
+  });
+  S.code=code;
+  subscribeRoom(code);
+  renderLobby();go('s-lobby');
+}
+
+// Push game start to Supabase (broadcasts to all players)
+async function onlineStartGame(room){
+  await sb.from('rooms').update({
+    started:true,
+    word:room.word,
+    roles:room.roles,
+  }).eq('code',room.code);
+}
+
+// Remove player from room on leave
+async function onlineLeaveRoom(){
+  if(!ROOM?.code||S.isHost)return;
+  const players=ROOM.players.filter(p=>p.id!==S.pid);
+  await sb.from('rooms').update({players}).eq('code',ROOM.code);
+  unsubscribeRoom();
+}
+
+// Delete room on host reset
+async function onlineDeleteRoom(){
+  if(!ROOM?.code||!S.isHost)return;
+  await sb.from('rooms').delete().eq('code',ROOM.code);
+  unsubscribeRoom();
+}
+
+// Subscribe to realtime changes on this room
+function subscribeRoom(code){
+  unsubscribeRoom();
+  supaChannel=sb.channel('room:'+code)
+    .on('postgres_changes',{
+      event:'UPDATE',
+      schema:'public',
+      table:'rooms',
+      filter:'code=eq.'+code,
+    },payload=>{
+      onRoomUpdate(payload.new);
+    })
+    .subscribe();
+}
+
+function unsubscribeRoom(){
+  if(supaChannel){sb.removeChannel(supaChannel);supaChannel=null;}
+}
+
+// Called whenever Supabase pushes a room update
+function onRoomUpdate(data){
+  if(!ROOM)return;
+  // Sync ROOM with latest from Supabase
+  ROOM.players=data.players||ROOM.players;
+  ROOM.started=data.started;
+  ROOM.word=data.word||ROOM.word;
+  ROOM.roles=data.roles||ROOM.roles;
+
+  const activeScreen=document.querySelector('.screen.active')?.id;
+
+  if(ROOM.started&&activeScreen==='s-lobby'){
+    // Host started the game — all guests jump to reveal
+    S.revealed=new Set();
+    renderReveal();go('s-reveal');
+  } else if(activeScreen==='s-lobby'){
+    // Player joined or left — refresh lobby
+    renderPlayers();
+  }
+}
+
+// Override joinRoom to go through Supabase instead of local check
+async function joinRoom(){
+  const name=document.getElementById('j-name').value.trim();
+  const code=document.getElementById('j-code').value.trim().toUpperCase();
+  if(!name)return err('j-err',t('enter_name_err2'));
+  if(!code)return err('j-err',t('enter_room_code'));
+  S.name=name;S.pid=S.pid||uid();
+  const player={id:S.pid,name};
+  S.isHost=false;S.playMode='online';
+  await onlineJoinRoom(code,player);
+}
+
+// Override resetHome to also clean up Supabase
+function resetHome(){
+  if(S.playMode==='online'&&S.isHost)onlineDeleteRoom();
+  else if(S.playMode==='online')onlineLeaveRoom();
+  ROOM=null;
+  S={...S,code:null,isHost:false,word:'',roles:{},revealed:new Set()};
+  go('s-home');
+}
+
+// Override onlineSync (no-op, handled by subscribeRoom)
+async function onlineSync(){}
+
+let selCat='Random';
+
+/* HELPERS */
+const uid=()=>Math.random().toString(36).slice(2,10);
+const rcode=()=>Math.floor(1000+Math.random()*9000).toString();
+const pick=a=>a[Math.floor(Math.random()*a.length)];
+const cats=()=>{
+  if(S.mode==='word') return appLang==='ar'?WCAT_AR:WCAT;
+  return appLang==='ar'?DCAT_AR:DCAT;
+};
+const allWords=()=>Object.values(cats()).filter(v=>v).flat();
+
+function go(id){document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));document.getElementById(id).classList.add('active');window.scrollTo(0,0);if(window.initCardParticles)setTimeout(window.initCardParticles,30);}
+function err(id,msg){const e=document.getElementById(id);e.textContent=msg;e.classList.add('show');setTimeout(()=>e.classList.remove('show'),4000);}
+
+const CAT_NAMES_AR={
+  'Random':'عشوائي','Anime Characters':'شخصيات أنمي','Marvel & DC':'مارفل وDC',
+  'Events':'أحداث','Holidays':'أعياد','Video Games':'ألعاب فيديو',
+  'Celebrities':'مشاهير','Countries':'دول','Music':'موسيقى',
+  'Brands':'علامات تجارية','Food & Snacks':'أكل وسناكس',
+  'Accessories':'إكسسوارات','Sports':'رياضة',
+  'Mammals':'ثدييات','Food':'طعام','Furniture':'أثاث',
+  'Weapons':'أسلحة','Nature':'طبيعة','Vehicles':'مركبات',
+  'Clothing':'ملابس','Emotions':'مشاعر',
+  'Cartoon Characters':'شخصيات كرتونية','Instruments':'آلات موسيقية',
+  'Custom':'مخصص',
+};
+const CAT_DESCS_AR={
+  'Random':'مزيج من جميع الفئات','Anime Characters':'أيقونات من الأنمي الشهير',
+  'Marvel & DC':'الأبطال والأشرار','Events':'أحداث عالمية وثقافة بوب',
+  'Holidays':'احتفالات حول العالم','Video Games':'ألعاب وإصدارات مشهورة',
+  'Celebrities':'وجوه مشهورة من كل المجالات','Countries':'دول حول العالم',
+  'Music':'أنواع موسيقية وأساليب','Brands':'شعارات وشركات عالمية',
+  'Food & Snacks':'أكلات وحلويات ومقرمشات','Accessories':'أجهزة وإكسسوارات',
+  'Sports':'ألعاب ورياضات','Mammals':'حيوانات للوصف',
+  'Food':'أشياء لذيذة للرسم','Furniture':'أثاث البيت',
+  'Weapons':'أسلحة وأدوات','Nature':'الطبيعة والهواء الطلق',
+  'Vehicles':'وسائل المواصلات','Clothing':'موضة وأزياء',
+  'Emotions':'مشاعر وتعابير','Cartoon Characters':'شخصيات مرسومة مشهورة',
+  'Instruments':'آلات موسيقية للرسم','Custom':'كلماتك الخاصة',
+};
+
+function buildCatGrid(){
+  const grid=document.getElementById('cat-grid');grid.innerHTML='';
+  const useAr=appLang==='ar';
+  Object.keys(cats()).forEach(k=>{
+    const d=document.createElement('div');d.className='cat-item'+(k===selCat?' sel':'');
+    const name=useAr?(CAT_NAMES_AR[k]||k):k;
+    const desc=useAr?(CAT_DESCS_AR[k]||''):(CAT_DESCS[k]||'');
+    d.innerHTML=`<span class="cat-icon">${CAT_ICONS[k]||'📁'}</span><span class="cat-label"><span>${name}</span>${desc?`<span class="cat-desc">${desc}</span>`:''}</span>`;
+    d.onclick=()=>{selCat=k;buildCatGrid();playClick();document.getElementById('custom-section').style.display=k==='Custom'?'block':'none';};
+    grid.appendChild(d);
+  });
+}
+
+document.getElementById('custom-words')?.addEventListener('input',function(){
+  const w=this.value.split(',').map(x=>x.trim()).filter(x=>x);
+  document.getElementById('word-count').textContent=w.length+' words';
+});
+
+function setMode(m){S.mode=m;document.getElementById('m-word').classList.toggle('sel',m==='word');document.getElementById('m-draw').classList.toggle('sel',m==='draw');selCat='Random';buildCatGrid();document.getElementById('custom-section').style.display='none';}
+function chImp(d){S.imps=Math.max(1,Math.min(S.imps+d,5));document.getElementById('imp-disp').textContent=S.imps;}
+function assignRoles(pl,n){const sh=shuffleArray(pl);const r={};sh.forEach((p,i)=>{r[p.id]=i<n?'imposter':'crewmate';});return r;}
+
+function getWord(){
+  if(selCat==='Custom'){const w=document.getElementById('custom-words').value.split(',').map(x=>x.trim()).filter(x=>x);if(w.length<3)return null;return pick(w);}
+  if(selCat==='Random')return pick(allWords());
+  return pick(cats()[selCat]);
+}
+
+let playerCount=3;
+
+function startCreate(mode){
+  S.playMode=mode;
+  document.getElementById('online-name-section').style.display=mode==='online'?'block':'none';
+  document.getElementById('phone-players-section').style.display=mode==='phone'?'block':'none';
+  if(mode==='phone'){playerCount=3;renderPlayerNameInputs();}
+  go('s-create');
+  buildCatGrid();
+}
+
+function chPlayerCount(d){
+  playerCount=Math.max(3,Math.min(playerCount+d,12));
+  document.getElementById('player-count-disp').textContent=playerCount;
+  renderPlayerNameInputs();
+}
+
+function renderPlayerNameInputs(){
+  const wrap=document.getElementById('player-name-inputs');
+  const existing=Array.from(wrap.querySelectorAll('input')).map(i=>i.value);
+  wrap.innerHTML='';
+  for(let i=0;i<playerCount;i++){
+    const inp=document.createElement('input');
+    inp.type='text';
+    inp.placeholder='Player '+(i+1)+' name';
+    inp.maxLength=20;
+    inp.id='pname-'+i;
+    if(existing[i])inp.value=existing[i];
+    wrap.appendChild(inp);
+  }
+}
+
+async function confirmCreate(){
+  if(selCat==='Custom'){const w=document.getElementById('custom-words').value.split(',').map(x=>x.trim()).filter(x=>x);if(w.length<3)return err('c-err',t('custom_words_err'));}
+  S.cat=selCat;
+
+  if(S.playMode==='online'){
+    const name=document.getElementById('c-name').value.trim();
+    if(!name)return err('c-err',t('enter_name_err'));
+    S.name=name;S.pid=S.pid||uid();
+    const player={id:S.pid,name};
+    ROOM=newRoom({code:rcode(),players:[player]});
+    S.code=ROOM.code;S.isHost=true;
+    await onlineCreateRoom(ROOM);
+    renderLobby();go('s-lobby');
+  } else {
+    // Pass phone — resolve all names locally and start immediately
+    const names=[];
+    for(let i=0;i<playerCount;i++){
+      const v=document.getElementById('pname-'+i).value.trim();
+      names.push(v||('Player '+(i+1)));
+    }
+    const players=names.map(n=>({id:uid(),name:n}));
+    if(S.imps>=players.length)return err('c-err',t('too_many_imposters'));
+    const word=getWord();
+    if(!word)return err('c-err',t('custom_words_err2'));
+    const roles=assignRoles(players,S.imps);
+    ROOM=newRoom({players,started:true,word,roles});
+    S.isHost=true;S.revealed=new Set();
+    renderReveal();go('s-reveal');
+  }
+}
+
+function joinRoom(){
+  const name=document.getElementById('j-name').value.trim();
+  const code=document.getElementById('j-code').value.trim();
+  if(!name)return err('j-err',t('enter_name_err2'));
+  if(!code)return err('j-err',t('enter_room_code'));
+  // Local validation (will be replaced by Supabase lookup)
+  if(!ROOM||ROOM.code!==code)return err('j-err',t('room_not_found'));
+  if(ROOM.started)return err('j-err',t('game_already_started'));
+  S.name=name;S.pid=S.pid||uid();
+  const player={id:S.pid,name};
+  ROOM.players.push(player);
+  S.code=code;S.isHost=false;S.playMode='online';
+  onlineJoinRoom(code,player); // stub — Supabase will handle
+  renderLobby();go('s-lobby');
+}
+
+function renderLobby(){
+  document.getElementById('l-code').textContent=ROOM.code||'';
+  generateQR('jinxed-qr','jinxed');
+  document.getElementById('l-mode').textContent=ROOM.mode==='word'?t('word_mode_full'):t('drawing_mode_full');
+  document.getElementById('l-cat').textContent=appLang==='ar'?(CAT_NAMES_AR[ROOM.cat]||ROOM.cat):ROOM.cat;
+  document.getElementById('l-imp').textContent=ROOM.imps;
+  document.getElementById('l-style').textContent=S.playMode==='phone'?t('pass_phone_label'):t('online_label');
+  document.getElementById('l-host-section').style.display=S.isHost?'block':'none';
+  document.getElementById('l-guest-section').style.display=S.isHost?'none':'block';
+  renderPlayers();
+}
+function renderPlayers(){
+  const list=document.getElementById('l-players');list.innerHTML='';
+  ROOM.players.forEach(p=>{
+    const d=document.createElement('div');d.className='pitem';
+    d.innerHTML=`<div class="ldot"></div><span>${p.name}${p.id===S.pid?' ('+t('you')+')':''}</span>`;
+    list.appendChild(d);
+  });
+}
+function leaveRoom(){
+  if(ROOM&&!S.isHost)ROOM.players=ROOM.players.filter(p=>p.id!==S.pid);
+  onlineLeaveRoom(); // stub
+  resetHome();
+}
+
+async function startGame(){
+  if(ROOM.players.length<3)return err('l-err',t('need_3_players'));
+  if(ROOM.imps>=ROOM.players.length)return err('l-err',t('too_many_imposters2'));
+  const word=getWord();if(!word)return err('l-err',t('custom_words_err2'));
+  const roles=assignRoles(ROOM.players,ROOM.imps);
+  ROOM.word=word;ROOM.roles=roles;ROOM.started=true;
+  S.revealed=new Set();
+  if(S.playMode==='online'){
+    await onlineStartGame(ROOM); // broadcast to all players via Supabase
+    // Host navigates themselves; guests navigate via onRoomUpdate
+  }
+  showGame();
+}
+
+/* REVEAL — supports both List (ver 1.0) and Flip Card styles */
+let revealStyle='list';
+
+function setRevealStyle(style){
+  revealStyle=style;
+  document.getElementById('rev-style-list').classList.toggle('active',style==='list');
+  document.getElementById('rev-style-flip').classList.toggle('active',style==='flip');
+  playClick();
+  renderReveal();
+}
+
+function renderReveal(){
+  if(revealStyle==='flip'){renderFlipGrid();return;}
+  const list=document.getElementById('reveal-list');list.innerHTML='';
+  ROOM.players.forEach(p=>{
+    const done=S.revealed.has(p.id);
+    const d=document.createElement('div');d.className='tap-card'+(done?' done':'');
+    d.innerHTML=`<div><div class="tap-name">${p.name}</div><div class="tap-hint">${done?t('role_seen'):t('tap_to_see_role')}</div></div><div class="tap-arr">${done?'✓':'›'}</div>`;
+    if(!done)d.onclick=()=>{playReveal();showRole(p);};
+    list.appendChild(d);
+  });
+  if(S.revealed.size===ROOM.players.length){
+    const btn=document.createElement('button');
+    btn.className='pill-btn';btn.style.cssText='width:100%;border-radius:12px;padding:15px;margin-top:10px;font-size:15px;';
+    btn.textContent=t('end_round_btn');
+    btn.onclick=()=>{playClick();endGame()};
+    list.appendChild(btn);
+  }
+}
+
+function renderFlipGrid(){
+  const list=document.getElementById('reveal-list');list.innerHTML='';
+  const pl=ROOM.players;
+  const roles=ROOM.roles;
+  const word=ROOM.word;
+
+  const grid=document.createElement('div');
+  grid.className='flip-grid';
+
+  pl.forEach(p=>{
+    const seen=S.revealed.has(p.id);
+    const imp=roles[p.id]==='imposter';
+
+    const scene=document.createElement('div');scene.className='flip-scene';
+    const card=document.createElement('div');card.className='flip-card';
+    card.dataset.flipped='false';
+
+    const front=document.createElement('div');front.className='flip-face flip-front';
+    front.innerHTML=`<div class="flip-name">${p.name}</div><div class="flip-tap">${seen?t('tap_to_view_again'):t('tap_to_flip')}</div>`;
+
+    const back=document.createElement('div');back.className='flip-face flip-back '+(imp?'imp':'crew');
+    back.innerHTML=(imp
+      ?`<div class="flip-icon">🎭</div><div class="flip-role">${t('imposter_title')}</div><div class="flip-sub">${t('imposter_hint')}</div>`
+      :`<div class="flip-icon">👁️</div><div class="flip-role">${t('player_title')}</div><div class="flip-word">${word}</div>`
+    )+`<div class="flip-retap">${t('tap_to_flip_back')}</div>`;
+
+    card.appendChild(front);card.appendChild(back);
+    scene.appendChild(card);
+
+    scene.onclick=()=>{
+      const isFlipped=card.dataset.flipped==='true';
+      if(isFlipped){
+        playReveal();
+        card.style.transform='rotateY(0deg) translateZ(0)';
+        card.dataset.flipped='false';
+      } else {
+        if(imp)playImposter();else playReveal();
+        card.style.transform='rotateY(180deg) translateZ(0)';
+        card.dataset.flipped='true';
+        if(!S.revealed.has(p.id)){
+          S.revealed.add(p.id);
+          setTimeout(checkAllRevealedFlip,500);
+        }
+      }
+      card.classList.remove('is-animating');
+      requestAnimationFrame(()=>card.classList.add('is-animating'));
+      setTimeout(()=>card.classList.remove('is-animating'),1050);
+    };
+    grid.appendChild(scene);
+  });
+  list.appendChild(grid);
+  checkAllRevealedFlip();
+}
+
+function checkAllRevealedFlip(){
+  const list=document.getElementById('reveal-list');
+  const existing=list.querySelector('.flip-end-btn');
+  if(existing)existing.remove();
+  if(S.revealed.size===ROOM.players.length){
+    const btn=document.createElement('button');
+    btn.className='pill-btn flip-end-btn';btn.style.cssText='width:100%;border-radius:12px;padding:15px;margin-top:14px;font-size:15px;';
+    btn.textContent=t('end_round_btn');
+    btn.onclick=()=>{playClick();endGame()};
+    list.appendChild(btn);
+  }
+}
+
+function showRole(player){
+  const imp=ROOM.roles[player.id]==='imposter';
+  if(imp)playImposter();
+  document.getElementById('role-container').innerHTML=`
+    <div class="role-card ${imp?'imp':'crew'}">
+      <div class="role-icon">${imp?'🎭':'👁️'}</div>
+      <div class="role-title">${imp?t('imposter_title'):t('player_title')}</div>
+      ${imp
+        ?`<div class="role-hint">${t('imposter_hint')}</div>`
+        :`<div class="role-wlabel">${ROOM.mode==='word'?t('the_word_is'):t('the_drawing_is')}</div><div class="role-word">${ROOM.word}</div><div class="role-hint">${t('player_hint')}</div>`
+      }
+    </div>`;
+  S.revealed.add(player.id);go('s-role');
+}
+function backReveal(){renderReveal();go('s-reveal');}
+
+function showGame(){
+  document.getElementById('g-word').textContent=ROOM.word;
+  document.getElementById('g-mode-lbl').textContent=ROOM.mode==='word'?t('word_mode_full'):t('drawing_mode_full');
+  document.getElementById('g-cat-lbl').textContent=ROOM.cat;
+  const gr=document.getElementById('g-roles');gr.innerHTML='';
+  ROOM.players.forEach(p=>{
+    const imp=ROOM.roles[p.id]==='imposter';
+    const d=document.createElement('div');d.className='rev-item';
+    d.innerHTML=`<span class="rev-name">${p.name}</span><span class="rtag ${imp?'imp':'crew'}">${imp?t('imposter_title'):t('player_title')}</span>`;
+    gr.appendChild(d);
+  });
+  go('s-game');
+}
+
+function endGame(){
+  document.getElementById('o-word').textContent=ROOM.word;
+  document.getElementById('o-imps').textContent=ROOM.players.filter(p=>ROOM.roles[p.id]==='imposter').map(p=>p.name).join(' & ')||t('none');
+  go('s-over');
+}
+
+function playAgain(){
+  if(S.playMode==='phone'){
+    const word=getWord();
+    const roles=assignRoles(ROOM.players,ROOM.imps);
+    ROOM.word=word;ROOM.roles=roles;ROOM.started=true;
+    S.revealed=new Set();
+    renderReveal();go('s-reveal');
+  } else {
+    ROOM.started=false;ROOM.word='';ROOM.roles={};
+    S.revealed=new Set();
+    renderLobby();go('s-lobby');
+  }
+}
+
+function resetHome(){
+  ROOM=null;
+  S={...S,code:null,isHost:false,word:'',roles:{},revealed:new Set()};
+  go('s-home');
+}
+
+/* ═══════ SPIN THE WHEEL ENGINE ═══════ */
+let WHEEL={options:[],spinning:false,currentRotation:0};
+const WHEEL_COLORS=['#ff3b5c','#00e5ff','#7c3aed','#22c55e','#f59e0b','#ec4899','#3b82f6','#14b8a6'];
+
+function wheelAddOption(){
+  const inp=document.getElementById('wheel-input');
+  const val=inp.value.trim();
+  if(!val)return;
+  WHEEL.options.push(val);
+  inp.value='';
+  wheelRenderList();
+  wheelDraw();
+}
+function wheelRemoveOption(idx){
+  WHEEL.options.splice(idx,1);
+  wheelRenderList();
+  wheelDraw();
+}
+function wheelRenderList(){
+  const list=document.getElementById('wheel-options-list');
+  list.innerHTML='';
+  WHEEL.options.forEach((opt,i)=>{
+    const d=document.createElement('div');
+    d.style.cssText='display:flex;align-items:center;justify-content:space-between;background:var(--card2);border:1px solid var(--border);border-radius:10px;padding:10px 14px;';
+    d.innerHTML=`<span style="display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;color:var(--white);"><span style="width:8px;height:8px;border-radius:50%;background:${WHEEL_COLORS[i%WHEEL_COLORS.length]};"></span>${opt}</span><button style="background:none;border:none;color:var(--gray);cursor:pointer;font-size:16px;" onclick="wheelRemoveOption(${i});playClick();">✕</button>`;
+    list.appendChild(d);
+  });
+}
+function wheelDraw(){
+  const cv=document.getElementById('wheel-canvas');
+  if(!cv)return;
+  const ctx=cv.getContext('2d');
+  const cx=cv.width/2,cy=cv.height/2,r=cv.width/2-4;
+  ctx.clearRect(0,0,cv.width,cv.height);
+  ctx.save();
+  ctx.translate(cx,cy);
+  ctx.rotate(WHEEL.currentRotation);
+  const opts=WHEEL.options.length?WHEEL.options:['Add options'];
+  const n=opts.length;
+  const slice=(Math.PI*2)/n;
+  for(let i=0;i<n;i++){
+    const start=i*slice,end=start+slice;
+    ctx.beginPath();
+    ctx.moveTo(0,0);
+    ctx.arc(0,0,r,start,end);
+    ctx.closePath();
+    ctx.fillStyle=WHEEL_COLORS[i%WHEEL_COLORS.length];
+    ctx.fill();
+    const midAngle=start+slice/2;
+    const normalized=((midAngle%(Math.PI*2))+Math.PI*2)%(Math.PI*2);
+    const upsideDown=normalized>Math.PI/2 && normalized<Math.PI*1.5;
+    ctx.save();
+    ctx.rotate(midAngle);
+    ctx.fillStyle='#fff';
+    ctx.font='bold 12px Inter, sans-serif';
+    const label=opts[i].length>16?opts[i].slice(0,15)+'…':opts[i];
+    if(upsideDown){
+      ctx.rotate(Math.PI);
+      ctx.textAlign='left';
+      ctx.fillText(label,-(r-10),4);
+    } else {
+      ctx.textAlign='right';
+      ctx.fillText(label,r-10,4);
+    }
+    ctx.restore();
+  }
+  ctx.restore();
+  ctx.beginPath();
+  ctx.arc(cx,cy,8,0,Math.PI*2);
+  ctx.fillStyle='#fff';
+  ctx.fill();
+}
+
+function wheelSpin(){
+  if(WHEEL.spinning)return;
+  if(WHEEL.options.length<2)return err('wheel-err','Add at least 2 options first.');
+  WHEEL.spinning=true;
+  document.getElementById('wheel-result').textContent='';
+  const n=WHEEL.options.length;
+  const slice=(Math.PI*2)/n;
+  const winnerIdx=Math.floor(Math.random()*n);
+  const startRotation=WHEEL.currentRotation;
+  // Target: center of winner slice lands at top pointer (3*PI/2 in canvas coords)
+  const targetSliceCenter=winnerIdx*slice+slice/2;
+  const baseAdditional=((Math.PI*1.5-targetSliceCenter-startRotation)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+  const additionalRotation=baseAdditional+Math.PI*2*6;
+  const duration=3800;
+  const startTime=performance.now();
+  let lastSliceCrossing=0;
+  function wheelTickSound(speed){
+    if(soundMuted)return;
+    try{
+      const c=getAC();
+      const o=c.createOscillator();const g=c.createGain();
+      o.connect(g);g.connect(c.destination);
+      o.type='triangle';
+      o.frequency.setValueAtTime(800+speed*400,c.currentTime);
+      g.gain.setValueAtTime(0.06,c.currentTime);
+      g.gain.exponentialRampToValueAtTime(0.001,c.currentTime+0.04);
+      o.start();o.stop(c.currentTime+0.04);
+    }catch(e){}
+  }
+  function animate(now){
+    const t=Math.min(1,(now-startTime)/duration);
+    const eased=1-Math.pow(1-t,4);
+    WHEEL.currentRotation=startRotation+additionalRotation*eased;
+    const pointerAngle=((Math.PI*1.5-WHEEL.currentRotation)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+    const currentSlice=Math.floor(pointerAngle/slice);
+    if(currentSlice!==lastSliceCrossing){
+      lastSliceCrossing=currentSlice;
+      wheelTickSound(1-eased);
+    }
+    wheelDraw();
+    if(t<1){requestAnimationFrame(animate);}
+    else{
+      WHEEL.spinning=false;
+      WHEEL.currentRotation=startRotation+additionalRotation;
+      const finalPointerAngle=((Math.PI*1.5-WHEEL.currentRotation)%(Math.PI*2)+Math.PI*2)%(Math.PI*2);
+      const actualWinner=Math.floor(finalPointerAngle/slice)%n;
+      playReveal();
+      document.getElementById('wheel-result').textContent='🎉 '+WHEEL.options[actualWinner];
+    }
+  }
+  requestAnimationFrame(animate);
+}
+
+
+
+/* ═══════ WHAT THE BLANK — CARD DATA ═══════ */
+const WTB_PROMPTS=[
+"I'll never forget the first time I ___.",
+"The real reason I got fired was ___.",
+"My biggest red flag is ___.",
+"What always ruins a first date? ___.",
+"They asked why I was banned from the bar. I said: ___.",
+"My therapist says I need to stop ___.",
+"The secret to a happy relationship is ___.",
+"I told my mom I was busy, but really I was ___.",
+"My villain origin story starts with ___.",
+"The group chat went silent after someone mentioned ___.",
+"Nobody talks about how often adults ___.",
+"The real MVP of any party is ___.",
+"They say money can't buy happiness, but ___ comes close.",
+"The real reason I'm single is ___.",
+"My browser history would explain a lot about ___.",
+"My toxic trait is definitely ___.",
+"If I had a warning label, it would say ___.",
+"I once got caught ___.",
+"The last thing I googled at 3am was ___.",
+"My biggest walk of shame happened because of ___.",
+"My superpower would have to be ___.",
+"I should probably apologize for ___.",
+"My future biography is titled \"___.\"",
+"I once made a whole room go silent by mentioning ___.",
+"The worst part of adulthood is definitely ___.",
+"I almost got arrested because of ___.",
+"The reason I was crying in the bathroom was ___.",
+"My villain era started with ___.",
+"I knew the relationship was over when ___.",
+"The one thing I'd never admit to my parents is ___.",
+"Scientists have discovered that ___ causes cancer.",
+"My last words will probably be ___.",
+"In a pinch, ___ makes an excellent lube.",
+"What ended my last relationship? ___.",
+"What's that smell? ___.",
+"A romantic evening for me involves ___.",
+"What's my secret fetish? ___.",
+"I lost 20 pounds by switching to a diet of ___.",
+"Next from Marvel: the incredible ___ vs ___.",
+"What do I bring to every party? ___.",
+"What gets me through a hard day? ___.",
+"What did I name my sex tape? ___.",
+"What will always get me out of bed in the morning? ___.",
+"Instead of therapy, I prefer ___.",
+"What's my guilty pleasure? ___.",
+"My doctor said I need to cut back on ___.",
+"During sex I think about ___.",
+"My ex is still not over ___.",
+"What keeps the terrorists away? ___.",
+"Step 1: ___. Step 2: Profit.",
+"What would Jesus do? ___.",
+"I drink to forget ___.",
+"What's the one thing I refuse to apologize for? ___.",
+"What did I find under the couch? ___.",
+"The worst gift I ever received was ___.",
+"They never invited me back after I brought up ___.",
+"The strangest thing in my search history is ___.",
+"If aliens studied humans, they'd be most confused by ___.",
+"The real plot twist of my life so far is ___.",
+"My love language is ___.",
+];
+
+const WTB_ANSWERS=[
+// Mundane / relatable
+"forgetting why you walked into a room","arguing with a GPS","crying in a Walmart parking lot","napping in a public bathroom","eating cereal for dinner at 30",
+"talking to your plants","being emotionally attached to a TV character","falling asleep during sex","stress-eating an entire pizza alone","lying about your age on a dating app",
+"rewatching the same show for the 5th time instead of trying something new","forgetting your own phone number","pretending to know what a word means in conversation","driving past your exit because you zoned out","setting 7 alarms and still waking up late",
+"talking to yourself in the mirror like you're in an interview","googling how to do your own taxes at 11pm the night they're due","buying a gym membership you never use","leaving a voicemail and immediately regretting it","laughing at your own joke before you finish telling it",
+"pretending to be on the phone to avoid a conversation","saying 'you too' when the waiter says enjoy your meal","walking into a glass door in public","forgetting someone's name three seconds after they say it","rehearsing an argument in the shower that will never happen",
+"emotional damage from a Wordle loss","being personally victimized by a parking lot","road rage at a red light alone in your car","an unreasonable attachment to a specific coffee mug","crying because you're hungry and don't realize it",
+// Embarrassing
+"shit my pants","threw up on a first date","accidentally sent a nude to a family group chat","farted during a yoga class","called my boss 'mom' in front of everyone",
+"got walked in on mid-masturbation","sneezed and shit simultaneously","cried during a McDonald's ad","woke up in a stranger's bed with no memory","got an erection at a funeral",
+"drunk-texted my ex's mom","got catfished by someone I matched with","pissed myself laughing at my own joke","shaved my eyebrows off for attention","got a UTI from a hookup",
+"called a teacher 'dad' in front of the whole class","tripped down the stairs in front of my entire office","got my foot stuck in a toilet","threw up on a rollercoaster and didn't tell anyone","accidentally liked a photo from 5 years deep in their profile",
+"got my nipple pierced on a dare and immediately regretted it","showed up to a costume party that wasn't a costume party","got caught talking about someone right as they walked in","sharted in a job interview","accidentally called 911 and hung up, then had cops show up",
+"got my card declined on a first date","walked around all day with food in my teeth","sent a risky text to the wrong group chat","got caught singing in the car at a red light","tripped and fell directly into a wedding cake",
+// Dark humor
+"my crippling daddy issues","a complete emotional breakdown at IKEA","the sweet release of death","becoming my parents","a drinking problem I've rebranded as a 'wine hobby'",
+"falling in love with someone unavailable again","self-destruction with extra steps","blacking out and calling it 'having a great time'","unresolved childhood trauma","being a disappointment to my entire family",
+"a mid-life crisis at 23","texting my ex at 2am and saying it was an accident","spending my therapy money on alcohol","googling symptoms and self-diagnosing cancer","lying to my therapist about making progress",
+"the crushing realization that nothing matters","my will to live, somewhere between low and nonexistent","a coping mechanism I picked up from a parent I'm in therapy about","screaming into a pillow instead of dealing with my problems","setting a New Year's resolution I abandoned by January 2nd",
+"a sadness I've fully monetized into content","staring at the ceiling at 3am wondering where it all went wrong","an inheritance I'll never see because everyone in my family lives forever out of spite","the five stages of grief, but for my bank account","emotionally numbing myself with reality television",
+"a funeral I made about myself somehow","my own eulogy, written by someone who clearly didn't like me","being the villain in someone else's story without realizing it","a slow, dramatic decline that everyone saw coming but me","existential dread, served with a side of fries",
+// Raunchy / adult (kept suggestive, not graphic)
+"a surprisingly good first kiss that went downhill fast","a wild night that's now just a group chat inside joke","getting freaky in a Denny's bathroom","two condoms and a prayer","a OnlyFans account that's doing better than my actual job",
+"being dominated by a short king","the weird kink I found out about on Reddit","a 3-hour Tinder date that ended in a handshake","an unsolicited dick pic","getting ghosted after the best night of my life",
+"having a fetish I can't explain to a doctor","dating someone ten years younger and never telling my parents","the hookup that put me in the hospital — long story","a vibrator with dead batteries at the worst possible moment","sexting my boss by accident",
+"a one-night stand that knows where I live now","a situationship I refuse to define","getting caught by my roommate mid-act","a love bite I had to explain to my coworkers","a Hinge date that ended with both of us crying for different reasons",
+"a walk of shame in last night's eyeliner","an ex who still has a key to my apartment and won't give it back","a hookup I immediately regretted but would absolutely do again","getting way too attached after one night","a situationship that lasted longer than some marriages",
+// Celebrity / absurd
+"a sex tape with Shrek","Kanye West having a normal one","Elon Musk tweeting at 3am","a Florida Man story that isn't made up","a celebrity meltdown caught entirely on a Ring camera",
+"eating a live frog on national TV","bribing a cop with a lap dance","accidentally joining a cult","getting tasered at a family reunion","adopting a child as a tax write-off",
+"a very ambitious fart","an Ambien sleepwalk to McDonald's","rage-quitting my own wedding","telling my CEO to go fuck himself and then realizing I was still on mute","peeing in the pool and owning it",
+"a billionaire's midlife crisis, but in rocket form","a reality TV star running for office and somehow winning","a celebrity's third wellness brand this year","an A-lister's cryptic Instagram caption that means nothing","a politician's unhinged 2am tweet",
+"a royal family scandal nobody saw coming","a tech CEO who thinks he's a superhero","an influencer's obviously fake apology video","a boy band reunion nobody asked for","a celebrity feud that's somehow still going in 2026",
+// Wild / chaotic
+"the one night stand that became a five-year relationship","finding my mom's vibrator","replying-all to a company-wide email","getting walked in on by my grandmother","waking up next to someone whose name I never learned",
+"making it weird at Christmas dinner","going through my ex's phone","sending a paragraph to someone who left me on read","starting a fight at someone else's wedding","crying during sex and refusing to explain why",
+"selling feet pics to pay rent","a LinkedIn post about my mental breakdown","accidentally liking a 3-year-old Instagram photo","having a full argument with myself in the shower","buying something on Amazon I'll never use and knowing it while clicking purchase",
+"adopting six cats after one bad breakup","starting an OnlyFans out of spite","getting a tattoo of my ex's name and lying about it later","quitting my job over text with zero notice","moving to a different state to avoid an awkward situation",
+"crashing a wedding for the free food","getting banned from a Chuck E. Cheese as an adult","starting a pyramid scheme to cope with a breakup","faking a British accent for an entire flight","telling a stranger my whole life story at a bus stop",
+"a group chat that's somehow still active after the friendship died","an ex who shows up uninvited to every event I'm at","a family group chat that's 90% memes and 10% passive aggression","getting unreasonably competitive at a board game night","crying at a chain restaurant because of the playlist",
+// Petty / minor annoyances escalated
+"slow WiFi","Mondays","people who chew loudly","passive-aggressive email sign-offs","being added to a group chat without consent",
+"my entire personality","good lighting and a filter","a concerning amount of self-confidence","the audacity","absolutely nothing — I'm empty inside",
+"someone who says 'no offense' right before being extremely offensive","a coworker who 'just has one quick question'","the group project member who did absolutely nothing","autocorrect betraying me at the worst possible moment","someone who replies to a text three weeks later like nothing happened",
+"a roommate who never replaces the toilet paper roll","getting unsolicited advice from someone with worse problems than me","a friend who's always 'so busy' but posts online all day","someone narrating their own actions out loud in public","a person who claps when the plane lands",
+"my horoscope being suspiciously accurate","a fortune cookie that called me out by name","my own reflection judging me","a Yelp review I wrote at 2am and don't remember","the group chat that goes silent right when I need backup"
+];
+
+const WTB_PROMPTS_AR=[
+"لن أنسى أبداً أول مرة ___.",
+"السبب الحقيقي لطردي من العمل كان ___.",
+"أكبر علامة تحذير فيّ هي ___.",
+"ما الذي يدمر الموعد الأول دائماً؟ ___.",
+"سألوني لماذا طُردت من المطعم. قلت: ___.",
+"معالجي النفسي يقول إنني يجب أن أتوقف عن ___.",
+"سر العلاقة السعيدة هو ___.",
+"قلت لأمي إنني مشغول، لكن في الحقيقة كنت ___.",
+"قصة تحولي للشرير بدأت بـ ___.",
+"صمت الجروب تشات بعد أن ذكر أحدهم ___.",
+"لا أحد يتحدث عن مدى تكرار ___.",
+"النجم الحقيقي لأي سهرة هو ___.",
+"يقولون المال لا يشتري السعادة، لكن ___ يقترب منها.",
+"السبب الحقيقي لكوني أعزب هو ___.",
+"سجل بحثي سيشرح الكثير عن ___.",
+"عادتي السامة بالتأكيد هي ___.",
+"لو كان عليّ بطاقة تحذير، ستكون: ___.",
+"مرة ضبطوني وأنا ___.",
+"آخر شيء بحثت عنه الساعة 3 صباحاً كان ___.",
+"أكبر موقف محرج مررت به كان بسبب ___.",
+"لو كان لديّ قوة خارقة فستكون ___.",
+"يجب أن أعتذر على الأرجح عن ___.",
+"عنوان سيرتي الذاتية المستقبلية: \"___\".",
+"مرة أسكتّ غرفة كاملة بمجرد أن ذكرت ___.",
+"أسوأ شيء في مرحلة البلوغ بالتأكيد هو ___.",
+"كدت أُعتقل بسبب ___.",
+"سبب بكائي في الحمام كان ___.",
+"حقبة شريري بدأت بـ ___.",
+"عرفت أن العلاقة انتهت عندما ___.",
+"الشيء الوحيد الذي لن أعترف به أمام أهلي هو ___.",
+"اكتشف العلماء أن ___ يسبب السرطان.",
+"كلماتي الأخيرة على الأرجح ستكون ___.",
+"في حالات الطوارئ، ___ يصلح لأي شيء.",
+"ما أنهى علاقتي الأخيرة؟ ___.",
+"ما هذه الرائحة؟ ___.",
+"سهرة رومانسية بالنسبة لي تتضمن ___.",
+"هوسي السري هو ___.",
+"خسرت عشرة كيلو بعد أن تحولت لنظام غذائي من ___.",
+"الجديد من مارفل: ___ ضد ___.",
+"ما الذي أحضره لكل سهرة؟ ___.",
+"ما الذي يساعدني على تجاوز يوم صعب؟ ___.",
+"ما الذي أسميت به أكبر مواقفي المحرجة؟ ___.",
+"ما الذي سيخرجني دائماً من السرير في الصباح؟ ___.",
+"بدلاً من العلاج النفسي، أفضّل ___.",
+"متعتي المحرجة هي ___.",
+"طبيبي قال يجب أن أقلل من ___.",
+"عندما أكون تحت ضغط أفكر في ___.",
+"معي لا يزال غير متعافٍ من ___.",
+"ما الذي يُبعد المشاكل؟ ___.",
+"الخطوة الأولى: ___. الخطوة الثانية: الربح.",
+"ماذا سيفعل النبي في هذا الموقف؟ ___.",
+"أشرب لأنسى ___.",
+"الشيء الوحيد الذي لن أعتذر عنه أبداً؟ ___.",
+"ما الذي وجدته تحت الكنبة؟ ___.",
+"أسوأ هدية تلقيتها في حياتي كانت ___.",
+"لم يدعوني مجدداً بعد أن ذكرت ___.",
+"أغرب شيء في سجل بحثي هو ___.",
+"لو درس الفضائيون البشر، سيتعجبون أكثر من ___.",
+"أكبر تحول في قصة حياتي حتى الآن هو ___.",
+"لغة حبي هي ___.",
+];
+
+const WTB_ANSWERS_AR=[
+// Mundane / relatable
+"نسيان سبب دخولك الغرفة","الجدال مع GPS","البكاء في موقف السيارات","النوم في حمام عام","أكل السيريال للعشاء وعمرك 30",
+"التحدث مع نباتاتك","التعلق العاطفي بشخصية في مسلسل","النوم أثناء مشهد ممل","أكل بيتزا كاملة وحدك من القلق","الكذب على عمرك في تطبيق المواعدة",
+"إعادة مشاهدة نفس المسلسل للمرة الخامسة","نسيان رقم هاتفك","التظاهر بمعرفة معنى كلمة لا تعرفها","تجاوز مخرجك لأنك كنت شارد الذهن","ضبط 7 منبهات والاستيقاظ متأخراً",
+"التحدث مع نفسك في المرآة كأنك في مقابلة عمل","البحث عن كيفية تقديم الضرائب الساعة 11 مساءً في آخر يوم","شراء اشتراك جيم لا تستخدمه","ترك رسالة صوتية والندم عليها فوراً","الضحك على نكتتك قبل أن تنهيها",
+"التظاهر بالتحدث بالهاتف لتجنب محادثة","قول 'أنت أيضاً' للنادل حين يقول استمتع بوجبتك","الاصطدام بباب زجاجي أمام الناس","نسيان اسم شخص بعد ثلاث ثواني من تعرفك عليه","التدرب على نقاش في الحمام لن يحدث أبداً",
+"الإحساس بالهزيمة بسبب Wordle","التعرض للظلم في موقف سيارات","الغضب وحدك في السيارة عند إشارة حمراء","تعلق غير منطقي بكوب قهوة معين","البكاء لأنك جائع دون أن تدرك ذلك",
+// Embarrassing
+"تبولت على نفسي","تقيأت في موعدي الأول","أرسلت رسالة محرجة للجروب العائلي بالخطأ","أطلقت ريحاً في درس يوغا","ناديت مديري بـ'ماما' أمام الكل",
+"صحيت في مكان غريب ولا أتذكر كيف وصلت","أرسلت رسالة لأم معي بالخطأ","بكيت من إعلان ماكدونالدز","ضحكت على نكتتي حتى بكيت وحيدي","احمررت وجهي في أسوأ لحظة ممكنة",
+"أرسلت رسالة لشخص أشتكي منه بالخطأ إليه","تعثرت وسقطت أمام كل زملاء العمل","ضحكت في موقف لا يُضحك فيه أبداً","حلقت حاجبي لأسباب لا أفهمها الآن","وصلت لحفلة تنكرية لم تكن تنكرية",
+"ناديت معلمي بـ'بابا' أمام الفصل كله","تعثرت على الدرج أمام كل المكتب","تكلمت عن شخص وهو يسمعني بالضبط","فتحت كاميرا الاجتماع وأنا لم أستيقظ بعد","أعجبت بصورة من 4 سنوات بالخطأ",
+"ظهرت باجتماع مهم وشعري فوضى كاملة","مشيت طول اليوم بطعام بين أسناني","أرسلت رسالة جريئة للجروب الخطأ","غنيت بصوت عالٍ في السيارة وجاري يشاهدني","وقعت مباشرة في تورتة عيد ميلاد",
+// Dark humor
+"مشاكلي مع والديّ","انهيار عاطفي كامل في إيكيا","الراحة الأبدية من كل هذا","أصبحت نسخة من أبويّ","مشكلة الإفراط في الأكل التي أسميتها 'هواية'",
+"الوقوع في حب شخص غير متاح مجدداً","تدمير الذات بخطوات إضافية","السهر حتى الفجر وتسميته 'وقت ممتع'","صدمات الطفولة التي لم أعالجها","كوني مخيباً لآمال عائلتي بالكامل",
+"أزمة منتصف العمر وعمري 23","مراسلة معي بعد منتصف الليل والادعاء بأنه خطأ","إنفاق مصاريف العلاج النفسي على أشياء لا تفيد","البحث عن أعراض وتشخيص نفسي بأمراض خطيرة","الكذب على معالجي النفسي بأنني بخير",
+"الإدراك المفاجئ بأن لا شيء مهم","إرادتي للحياة، في مكان ما بين ضعيفة ومعدومة","آلية تكيف تعلمتها من أحد والديّ وأنا في علاج بسببها","الصراخ في الوسادة بدلاً من مواجهة مشاكلي","قرارات السنة الجديدة التي تخليت عنها في 2 يناير",
+"حزن حولته لمحتوى على وسائل التواصل","التحديق في السقف الساعة 3 صباحاً أتساءل أين أخطأت","ميراث لن أراه لأن كل أقاربي يعيشون للأبد بدافع العناد","مراحل الحزن الخمس، لكن على حسابي البنكي","تخدير نفسي بمشاهدة برامج الواقع",
+"جنازة حولتها بطريقة ما إلى قضيتي الشخصية","خطاب رثاء كتبه شخص واضح أنه لم يحبني","كوني الشرير في قصة شخص آخر دون أن أدرك","انهيار بطيء توقعه الجميع إلا أنا","وجودية مقلقة تُقدَّم مع وجبة",
+// Raunchy / adult
+"قبلة أولى مثيرة انحدرت بسرعة","ليلة جنونية أصبحت نكتة في الجروب","موقف محرج في مكان عام لن أنساه","ليلة غريبة وصباح أغرب","حساب على الإنترنت يكسب أكثر من وظيفتي الحقيقية",
+"الوقوع في إعجاب بشخص قصير القامة بشكل غير منطقي","الهوس الغريب الذي وجدته على الإنترنت","موعد من تطبيق مواعدة انتهى بمصافحة","رسالة أُرسلت للشخص الخطأ","الاختفاء بعد أفضل ليلة في حياتي",
+"هوس لا أستطيع شرحه لطبيب","المواعدة بفارق عمر كبير دون إخبار أهلي","قصة محرجة أدخلتني المستشفى — حديث طويل","لحظة توقيت سيء لا تُنسى","إرسال رسالة خاطئة لمديري",
+"شخص يعرف عنواني الآن بعد لقاء واحد","علاقة غير معرّفة رفضت تسميتها","اكتشاف غير متوقع من الشريك","عضة حب اضطررت لشرحها لزملاء العمل","موعد انتهى بكلانا يبكي لأسباب مختلفة",
+"مشية العار وبقايا ميكاب الليلة الماضية","معي لا يزال يملك مفتاح شقتي ويرفض الإعادة","لقاء ندمت عليه فوراً لكنني سأكرره","التعلق الشديد بشخص بعد لقاء واحد","علاقة غير رسمية دامت أطول من بعض الزيجات",
+// Celebrity / absurd
+"إيلون ماسك يرسل لي رسائل مباشرة","كانييه ويست في أسوأ حالاته","تغريدة من حساب رئيس منتصف الليل","فضيحة مشاهير لم تصل للإعلام","اجتماع تيد توك لم يُدعَ إليه أحد",
+"مؤامرة مصطنعة بواسطة الحكومة","تمثال شمعي في متحف مدام توسو","ذكاء اصطناعي يكتب سيرتي الذاتية","حصان الفضاء لإيلون","نهاية العالم بسبب خوارزمية تيك توك",
+"مؤتمر صحفي لم يطلبه أحد","بودكاست من ثلاث حلقات لم يكملها أحد","نظرية مؤامرة تبدو منطقية الساعة 3 صباحاً","كيان فضائي يقيّم البشرية بـ 3 من 10","تحقيق رسمي في سبب وجودي هنا",
+"روبوت من المستقبل أُرسل لإحباطي","حفل موسيقي في الميتافيرس بدون جمهور","إعلان تجاري لمنتج لا أفهم ما هو","وثائقي نتفليكس عن قراراتي السيئة","مقابلة بودكاست عن لا شيء لمدة ساعتين",
+"تطبيق ناجح يحل مشكلة غير موجودة","خوارزمية تحولت ضدي شخصياً","اجتماع كان يمكن أن يكون إيميلاً","شركة ناشئة بقيمة مليار دولار لا أفهم ما تفعله","الذكاء الاصطناعي يكتب معتذراً عن وجوده",
+// Food / random / misc
+"بقايا بيتزا الساعة 3 صباحاً","علبة نوتيلا كاملة بملعقة واحدة","طلب أكل بقيمة لا أستطيع تحملها","أكل الكيك مباشرة من الثلاجة بالشوكة","رائحة ماكدونالدز في السيارة تدوم أسابيع",
+"شاورما الساعة 2 صباحاً بعد سهرة","كنافة كاملة لشخص واحد دون ندم","طلب نفس الطلب من نفس المطعم 4 مرات في الأسبوع","اكتشاف أن الطعام المتبقي أُكل","تحضير وجبة صحية والانتهاء بأكل الشيبس بجانبها",
+"مشروب طاقة كبديل عن النوم","شراء فاكهة لا تُؤكل حتى تتعفن","إنفاق ميزانية الأسبوع على أوبر إيتس في يوم واحد","تحضير قهوة والنسيان عنها حتى تبرد مرتين","أكل وجبة كاملة وأنت واقف أمام الثلاجة",
+"مشروب بوبا يكلف أكثر من وجبتي","طلب صحي واستبداله بالأكل المريح لأنني حزين","اختراع وصفة لا تصلح لأي موقف","أكل الأرز البارد مباشرة من الإناء","تناول العشاء وحيداً مع مسلسل وتسميته 'وقت جودة'",
+"شراء مكونات لوصفة لا أطبخها أبداً","تحضير قائمة تسوق صحية وتجاهلها كاملاً","وجبة سحور أصبحت أسطورة في العائلة","أكل بقايا طعام الأمس على الإفطار وتسميته 'فيوجن'","مشاركة طعامك ثم الندم فوراً",
+];
+
+const WTB_HAND_SIZE=7;
+
+/* WTB STATE */
+let WTB={
+  players:[],
+  round:1,
+  rounds:5,
+  judgeIdx:0,
+  prompt:'',
+  submissions:[],
+  deck:[],
+  promptDeck:[],
+  playerCount:3,
+  code:null,
+  playMode:'phone',
+};
+
+function wtbStartCreate(mode){
+  WTB.playMode=mode;
+  document.getElementById('wtb-online-name-section').style.display=mode==='online'?'block':'none';
+  document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
+  // Reset any leftover state from a previous mode visit
+  document.getElementById('wtb-lobby-code-section').style.display='none';
+  document.getElementById('wtb-start-btn').textContent=t('wtb_start_game');
+  document.getElementById('wtb-start-btn').dataset.state='';
+  document.getElementById('wtb-start-btn').onclick=()=>{playClick();wtbConfirmCreate();};
+  WTB.code=null;
+  if(mode==='phone'){WTB.playerCount=3;document.getElementById('wtb-player-disp').textContent=WTB.playerCount;wtbRenderNameInputs();}
+  wtbUpdateRoundOptions();
+  go('wtb-create');
+}
+
+function wtbEffectivePlayerCount(){
+  // For phone mode use the chosen player count; for online mode use however many have joined (min 3 for sane defaults)
+  return WTB.playMode==='phone'?WTB.playerCount:Math.max(WTB.players.length,3);
+}
+
+function wtbRoundOptions(){
+  const n=wtbEffectivePlayerCount();
+  // Multiples of player count so every player judges (and plays) an equal number of times — avoids lopsided point opportunities
+  return [n,n*2,n*3,n*4];
+}
+
+function wtbUpdateRoundOptions(){
+  const opts=wtbRoundOptions();
+  if(!opts.includes(WTB.rounds))WTB.rounds=opts[0];
+  document.getElementById('wtb-rounds-disp').textContent=WTB.rounds;
+}
+
+function wtbChPlayers(d){
+  WTB.playerCount=Math.max(3,Math.min(WTB.playerCount+d,10));
+  document.getElementById('wtb-player-disp').textContent=WTB.playerCount;
+  wtbRenderNameInputs();
+  wtbUpdateRoundOptions();
+}
+function wtbRenderNameInputs(){
+  const wrap=document.getElementById('wtb-name-inputs');
+  const existing=Array.from(wrap.querySelectorAll('input')).map(i=>i.value);
+  wrap.innerHTML='';
+  for(let i=0;i<WTB.playerCount;i++){
+    const inp=document.createElement('input');
+    inp.type='text';inp.placeholder=t('player_name_ph').replace('{n}',i+1);inp.maxLength=20;inp.id='wtb-pname-'+i;
+    if(existing[i])inp.value=existing[i];
+    wrap.appendChild(inp);
+  }
+}
+function wtbChRounds(d){
+  const opts=wtbRoundOptions();
+  let idx=opts.indexOf(WTB.rounds);if(idx===-1)idx=0;
+  idx=Math.max(0,Math.min(idx+d,opts.length-1));
+  WTB.rounds=opts[idx];
+  document.getElementById('wtb-rounds-disp').textContent=WTB.rounds;
+}
+
+function shuffleArray(arr){
+  const a=[...arr];
+  for(let i=a.length-1;i>0;i--){
+    const j=Math.floor(Math.random()*(i+1));
+    [a[i],a[j]]=[a[j],a[i]];
+  }
+  return a;
+}
+function wtbShuffledDeck(arr){return shuffleArray(arr);}
+
+function wtbDraw(n){
+  const out=[];
+  const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
+  for(let i=0;i<n;i++){
+    if(WTB.deck.length===0)WTB.deck=wtbShuffledDeck(answers);
+    out.push(WTB.deck.pop());
+  }
+  return out;
+}
+
+function wtbSetupGame(uniqueNames){
+  const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
+  const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
+  WTB.deck=wtbShuffledDeck(answers);
+  WTB.promptDeck=wtbShuffledDeck(prompts);
+  WTB.players=uniqueNames.map(n=>({id:uid(),name:n,score:0,hand:[]}));
+  WTB.players.forEach(p=>{p.hand=wtbDraw(WTB_HAND_SIZE);});
+  WTB.round=1;
+  WTB.judgeIdx=0;
+  wtbUpdateRoundOptions();
+}
+
+function wtbConfirmCreate(){
+  if(WTB.playMode==='online'){
+    const hostName=document.getElementById('wtb-host-name').value.trim();
+    if(!hostName)return err('wtb-create-err',t('enter_name_err2'));
+    WTB.code=rcode();
+    wtbSetupGame([hostName]);
+    document.getElementById('wtb-room-code-display').textContent=WTB.code;
+    document.getElementById('wtb-lobby-code-section').style.display='block';
+    generateQR('wtb-qr','wtb');
+    document.getElementById('wtb-start-btn').textContent=t('wtb_waiting_players');
+    document.getElementById('wtb-start-btn').dataset.state='waiting';
+    document.getElementById('wtb-start-btn').onclick=()=>{playClick();wtbBeginGame();};
+    wtbRenderOnlinePlayers();
+  } else {
+    const names=[];
+    for(let i=0;i<WTB.playerCount;i++){
+      const v=document.getElementById('wtb-pname-'+i)?.value.trim();
+      names.push(v||('Player '+(i+1)));
+    }
+    const uniqueNames=[...new Set(names)];
+    if(uniqueNames.length<3)return err('wtb-create-err',t('need_3_players_diff'));
+    WTB.code=null;
+    wtbSetupGame(uniqueNames);
+    document.getElementById('wtb-lobby-code-section').style.display='none';
+    wtbBeginGame();
+    return;
+  }
+}
+
+function wtbRenderOnlinePlayers(){
+  const wrap=document.getElementById('wtb-online-players');
+  if(!wrap)return;
+  wrap.innerHTML='';
+  WTB.players.forEach(p=>{
+    const d=document.createElement('div');d.className='pitem';
+    d.innerHTML=`<div class="ldot"></div><span>${p.name}</span>`;
+    wrap.appendChild(d);
+  });
+}
+
+function wtbJoinRoom(){
+  const name=document.getElementById('wtb-j-name').value.trim();
+  const code=document.getElementById('wtb-j-code').value.trim();
+  if(!name)return err('wtb-j-err',t('enter_name_err2'));
+  if(!code)return err('wtb-j-err',t('enter_room_code'));
+  if(!WTB.code||WTB.code!==code)return err('wtb-j-err',t('room_not_found'));
+  WTB.players.push({id:uid(),name,score:0,hand:wtbDraw(WTB_HAND_SIZE)});
+  document.getElementById('wtb-room-code-display').textContent=WTB.code;
+  document.getElementById('wtb-lobby-code-section').style.display='block';
+  wtbRenderOnlinePlayers();
+  wtbUpdateRoundOptions();
+  go('wtb-create');
+}
+
+function wtbBeginGame(){
+  if(WTB.players.length<3)return err('wtb-create-err',t('need_3_to_start'));
+  wtbStartRound();
+}
+
+function wtbStartRound(){
+  // Pick prompt from shuffled prompt deck
+  if(WTB.promptDeck.length===0)WTB.promptDeck=wtbShuffledDeck(WTB_PROMPTS);
+  WTB.prompt=WTB.promptDeck.pop();
+  WTB.submissions=[];
+  WTB.players.forEach(p=>p.submitted=false);
+
+  const judge=WTB.players[WTB.judgeIdx];
+  // Show prompt reveal screen
+  document.getElementById('wtb-pr-round').textContent=WTB.round;
+  document.getElementById('wtb-pr-total').textContent=WTB.rounds;
+  document.getElementById('wtb-pr-prompt').textContent=WTB.prompt;
+  document.getElementById('wtb-pr-judge').textContent=judge.name;
+  const nonJudgeCount=WTB.players.length-1;
+  document.getElementById('wtb-pr-judge-note').textContent=t('judge_waiting_detail',{name:judge.name,n:nonJudgeCount});
+  go('wtb-prompt-reveal');
+}
+
+function wtbStartPicking(){
+  wtbRenderHandList();
+  go('wtb-hand-list');
+}
+
+function wtbRenderHandList(){
+  document.getElementById('wtb-round-num').textContent=WTB.round;
+  document.getElementById('wtb-round-total').textContent=WTB.rounds;
+  document.getElementById('wtb-prompt-display').textContent=WTB.prompt;
+  const list=document.getElementById('wtb-hand-playerlist');
+  list.innerHTML='';
+  const judge=WTB.players[WTB.judgeIdx];
+
+  WTB.players.forEach(p=>{
+    const isJudge=p.id===judge.id;
+    const done=p.submitted;
+    const d=document.createElement('div');
+    d.className='tap-card'+(done?' done':'');
+    if(isJudge){
+      d.innerHTML=`<div><div class="tap-name">${p.name}</div><div class="tap-hint" style="color:var(--accent);">${t('judging_not_playing')}</div></div><div class="tap-arr" style="color:var(--accent);">👑</div>`;
+    } else {
+      d.innerHTML=`<div><div class="tap-name">${p.name}</div><div class="tap-hint">${done?t('card_submitted'):t('tap_to_pick')}</div></div><div class="tap-arr">${done?'✓':'›'}</div>`;
+      if(!done)d.onclick=()=>{playClick();wtbOpenHand(p);};
+    }
+    list.appendChild(d);
+  });
+
+  const nonJudges=WTB.players.filter(p=>p.id!==judge.id);
+  if(nonJudges.every(p=>p.submitted)){
+    const btn=document.createElement('button');
+    btn.className='pill-btn';btn.style.cssText='width:100%;border-radius:12px;padding:15px;margin-top:10px;font-size:15px;';
+    btn.textContent=t('all_cards_in_btn',{name:judge.name});
+    btn.onclick=()=>{playReveal();wtbShowJudging();};
+    list.appendChild(btn);
+  }
+}
+
+let wtbPickStyle='list';
+
+function wtbSetPickStyle(style){
+  wtbPickStyle=style;
+  document.getElementById('wtb-pick-style-list').classList.toggle('active',style==='list');
+  document.getElementById('wtb-pick-style-cards').classList.toggle('active',style==='cards');
+  playClick();
+  if(wtbCurrentHandPlayer)wtbRenderHand(wtbCurrentHandPlayer);
+}
+
+let wtbCurrentHandPlayer=null;
+
+function wtbOpenHand(player){
+  wtbCurrentHandPlayer=player;
+  document.getElementById('wtb-current-player-name').textContent=player.name;
+  document.getElementById('wtb-prompt-display-2').textContent=WTB.prompt;
+  wtbRenderHand(player);
+  go('wtb-hand-pick');
+}
+
+function wtbPlayCard(player,idx,card){
+  playCardPlace();
+  WTB.submissions.push({playerId:player.id,playerName:player.name,card});
+  player.hand.splice(idx,1); // remove played card
+  player.submitted=true;
+  wtbRenderHandList();
+  go('wtb-hand-list');
+}
+
+function wtbRenderHand(player){
+  const wrap=document.getElementById('wtb-hand-cards');
+  wrap.innerHTML='';
+
+  if(wtbPickStyle==='cards'){
+    wrap.style.cssText='margin-top:8px;margin-bottom:16px;';
+    const grid=document.createElement('div');
+    grid.className='wtb-card-grid';
+    player.hand.forEach((card,idx)=>{
+      const el=document.createElement('div');
+      el.className='wtb-card-tile';
+      el.innerHTML=`<span class="wtb-card-text">${card}</span><span class="wtb-card-corner">${t('pick_lbl')}</span>`;
+      el.onclick=()=>wtbPlayCard(player,idx,card);
+      grid.appendChild(el);
+    });
+    wrap.appendChild(grid);
+  } else {
+    wrap.style.cssText='display:flex;flex-direction:column;gap:8px;margin-top:8px;margin-bottom:16px;';
+    player.hand.forEach((card,idx)=>{
+      const d=document.createElement('div');
+      d.className='rev-item';
+      d.style.cursor='pointer';
+      d.style.cssText+=';background:#fff;border:1px solid #ddd;border-radius:10px;padding:14px 16px;margin-bottom:2px;';
+      d.innerHTML=`<span class="rev-name" style="font-size:14px;color:#111;font-weight:600;">${card}</span><span class="rtag" style="background:#111;color:#fff;border:none;">${t('pick_lbl')}</span>`;
+      d.onclick=()=>wtbPlayCard(player,idx,card);
+      wrap.appendChild(d);
+    });
+  }
+}
+
+function wtbShowJudging(){
+  const judge=WTB.players[WTB.judgeIdx];
+  document.getElementById('wtb-vote-round-num').textContent=WTB.round;
+  document.getElementById('wtb-judge-name-display').textContent=judge.name;
+  document.getElementById('wtb-prompt-display-3').textContent=WTB.prompt;
+  // Shuffle so judge can't guess who submitted what
+  const shuffled=shuffleArray(WTB.submissions);
+  const wrap=document.getElementById('wtb-vote-cards');
+  wrap.innerHTML='';
+  shuffled.forEach(sub=>{
+    const d=document.createElement('div');
+    d.className='tap-card';
+    d.style.marginBottom='0';
+    // White card style for answers
+    d.style.cssText+=';background:#fff;border:1px solid #ddd;border-radius:12px;padding:16px;';
+    d.innerHTML=`<div style="text-align:left;width:100%;"><div style="font-size:15px;font-weight:700;color:#111;line-height:1.5;">${sub.card}</div></div>`;
+    d.onclick=()=>{playWinner();wtbAwardPoint(sub);};
+    wrap.appendChild(d);
+  });
+  go('wtb-voting');
+}
+
+function wtbAwardPoint(winningSub){
+  const winner=WTB.players.find(p=>p.id===winningSub.playerId);
+  if(winner)winner.score+=1;
+  const judge=WTB.players[WTB.judgeIdx];
+
+  document.getElementById('wtb-round-winner-name').textContent=winner?winner.name:'?';
+  // Show winning card in context
+  const sentence=WTB.prompt.replace('___',winningSub.card.toUpperCase());
+  document.getElementById('wtb-winning-card-display').textContent=sentence;
+
+  // Scoreboard
+  const sb=document.getElementById('wtb-scoreboard');
+  sb.innerHTML='';
+  [...WTB.players].sort((a,b)=>b.score-a.score).forEach((p,i)=>{
+    const d=document.createElement('div');d.className='cfg-row';
+    d.innerHTML=`<span class="cfg-lbl">${i===0?'🏆 ':''} ${p.name}${p.id===judge.id?' 👑':''}</span><span class="cfg-val">${p.score} ${p.score===1?t('pt_singular'):t('pt_plural')}</span>`;
+    sb.appendChild(d);
+  });
+
+  // Refill non-judge hands to WTB_HAND_SIZE
+  WTB.players.forEach(p=>{
+    if(p.id!==judge.id){
+      const need=WTB_HAND_SIZE-p.hand.length;
+      if(need>0)p.hand=p.hand.concat(wtbDraw(need));
+    }
+  });
+
+  // Next judge preview
+  const nextJudgeIdx=(WTB.judgeIdx+1)%WTB.players.length;
+  const nextJudge=WTB.players[nextJudgeIdx];
+  const isLastRound=WTB.round>=WTB.rounds;
+  document.getElementById('wtb-next-judge-preview').textContent=isLastRound?t('final_round_complete'):t('next_judge_preview',{name:nextJudge.name});
+  document.getElementById('wtb-next-btn').textContent=isLastRound?t('see_final_results'):t('next_round_arrow');
+  go('wtb-roundresult');
+}
+
+function wtbNextRound(){
+  if(WTB.round>=WTB.rounds){wtbShowFinal();return;}
+  WTB.round+=1;
+  WTB.judgeIdx=(WTB.judgeIdx+1)%WTB.players.length;
+  wtbStartRound();
+}
+
+function wtbShowFinal(){
+  playWinner();
+  const sorted=[...WTB.players].sort((a,b)=>b.score-a.score);
+  document.getElementById('wtb-final-winner').textContent=sorted[0].name;
+  const fsb=document.getElementById('wtb-final-scoreboard');
+  fsb.innerHTML='';
+  sorted.forEach((p,i)=>{
+    const d=document.createElement('div');d.className='cfg-row';
+    d.innerHTML=`<span class="cfg-lbl">${i===0?'🏆 ':i===1?'🥈 ':i===2?'🥉 ':''} ${p.name}</span><span class="cfg-val">${p.score} ${p.score===1?t('pt_singular'):t('pt_plural')}</span>`;
+    fsb.appendChild(d);
+  });
+  go('wtb-final');
+}
+
+/* INVITE LINK FEATURE */
+function generateQR(containerId, game){
+  const code=game==='jinxed'?S.code:WTB.code;
+  if(!code)return;
+  const el=document.getElementById(containerId);
+  if(!el)return;
+  el.innerHTML='';
+  el.style.display='block';
+  const base=window.location.href.split('?')[0];
+  const url=base+'?room='+code+'&game='+game;
+  try{
+    new QRCode(el,{text:url,width:108,height:108,colorDark:'#000000',colorLight:'#ffffff',correctLevel:QRCode.CorrectLevel.M});
+  }catch(e){}
+}
+
+function copyInviteLink(game){
+  const code=game==='jinxed'?S.code:WTB.code;
+  if(!code)return;
+  const base=window.location.href.split('?')[0];
+  const link=base+'?room='+code+'&game='+game;
+  navigator.clipboard.writeText(link).then(()=>{
+    const btnId=game==='jinxed'?'jinxed-invite-btn-text':'wtb-invite-btn-text';
+    const btn=document.getElementById(btnId);
+    if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy Invite Link',2500);}
+  }).catch(()=>{
+    // Fallback for non-HTTPS or clipboard blocked
+    const ta=document.createElement('textarea');
+    ta.value=link;document.body.appendChild(ta);ta.select();document.execCommand('copy');document.body.removeChild(ta);
+    const btnId=game==='jinxed'?'jinxed-invite-btn-text':'wtb-invite-btn-text';
+    const btn=document.getElementById(btnId);
+    if(btn){btn.textContent='Copied!';setTimeout(()=>btn.textContent='Copy Invite Link',2500);}
+  });
+}
+
+/* CHECK URL PARAMS ON LOAD — auto-fill join form if invite link used */
+(function(){
+  const params=new URLSearchParams(window.location.search);
+  const roomParam=params.get('room');
+  const gameParam=params.get('game');
+  if(roomParam){
+    window.addEventListener('load',()=>{
+      if(gameParam==='wtb'){
+        switchGame('wtb');
+        go('wtb-join');
+        const wtbCodeInput=document.getElementById('wtb-j-code');
+        if(wtbCodeInput)wtbCodeInput.value=roomParam;
+      } else {
+        go('s-join');
+        const codeInput=document.getElementById('j-code');
+        if(codeInput)codeInput.value=roomParam;
+      }
+    });
+  }
+})();
+
+/* ══════════════════════════════════════
+   ROLL THE DICE
+══════════════════════════════════════ */
+let DICE={count:1,values:[1]};
+const DICE_PIPS={
+  1:[[50,50]],
+  2:[[25,25],[75,75]],
+  3:[[25,25],[50,50],[75,75]],
+  4:[[25,25],[25,75],[75,25],[75,75]],
+  5:[[25,25],[25,75],[50,50],[75,25],[75,75]],
+  6:[[25,25],[25,50],[25,75],[75,25],[75,50],[75,75]],
+};
+function diceChCount(d){
+  DICE.count=Math.max(1,Math.min(DICE.count+d,6));
+  document.getElementById('dice-count-disp').textContent=DICE.count;
+  diceRenderAll();
+}
+function diceFaceSVG(val){
+  const pips=DICE_PIPS[val]||[];
+  let dots='';
+  pips.forEach(([x,y])=>{dots+=`<circle cx="${x}" cy="${y}" r="7" fill="currentColor" class="pip-dot"/>`;});
+  return `<svg viewBox="0 0 100 100" width="100%" height="100%" style="color:inherit">${dots}</svg>`;
+}
+function diceRenderAll(){
+  if(DICE.values.length!==DICE.count){
+    DICE.values=Array.from({length:DICE.count},()=>Math.floor(Math.random()*6)+1);
+  }
+  const wrap=document.getElementById('dice-container');
+  wrap.innerHTML='';
+  DICE.values.forEach((val,idx)=>{
+    const die=document.createElement('div');
+    die.className='dice-cube';
+    die.id='dice-'+idx;
+    die.innerHTML=`<div class="dice-face">${diceFaceSVG(val)}</div>`;
+    die.onclick=()=>diceRollOne(idx);
+    wrap.appendChild(die);
+  });
+  diceUpdateTotal();
+}
+function diceUpdateTotal(){
+  const total=DICE.values.reduce((a,b)=>a+b,0);
+  document.getElementById('dice-total').textContent=DICE.count>1?t('total_label',{n:total}):'';
+}
+function diceRollOne(idx){
+  const die=document.getElementById('dice-'+idx);
+  if(!die||die.classList.contains('rolling'))return;
+  playDiceRoll();
+  const newVal=Math.floor(Math.random()*6)+1;
+  die.classList.add('rolling');
+  let flickerCount=0;
+  const flicker=setInterval(()=>{
+    const randomFace=Math.floor(Math.random()*6)+1;
+    die.querySelector('.dice-face').innerHTML=diceFaceSVG(randomFace);
+    flickerCount++;
+    if(flickerCount>8){
+      clearInterval(flicker);
+      die.querySelector('.dice-face').innerHTML=diceFaceSVG(newVal);
+      DICE.values[idx]=newVal;
+      die.classList.remove('rolling');
+      playDiceLand();
+      diceUpdateTotal();
+    }
+  },70);
+}
+function diceRollAll(){
+  for(let i=0;i<DICE.count;i++){
+    setTimeout(()=>diceRollOne(i),i*100);
+  }
+}
+
+/* ══════════════════════════════════════
+   GAME SWITCHER — nav tabs
+══════════════════════════════════════ */
+const GAME_SCREENS={
+  jinxed:['s-home','s-create','s-join','s-lobby','s-reveal','s-role','s-game','s-over'],
+  wtb:['wtb-home','wtb-create','wtb-join','wtb-prompt-reveal','wtb-hand-list','wtb-hand-pick','wtb-voting','wtb-roundresult','wtb-final'],
+  wheel:['wheel-home'],
+  dice:['dice-home'],
+  '8ball':['8ball-home'],
+};
+let currentGame='jinxed';
+
+function switchGame(game){
+  if(currentGame===game)return;
+  currentGame=game;
+  // Update nav tabs
+  document.querySelectorAll('.nav-tab').forEach(t=>t.classList.remove('active'));
+  const tab=document.getElementById('nav-'+game);
+  if(tab)tab.classList.add('active');
+  // Hide all game screens
+  Object.values(GAME_SCREENS).flat().forEach(id=>{
+    const el=document.getElementById(id);
+    if(el)el.classList.remove('active');
+  });
+  // Show first screen of chosen game
+  const firstScreen=GAME_SCREENS[game]?.[0];
+  if(firstScreen){
+    document.getElementById(firstScreen).classList.add('active');
+    if(window.initCardParticles)setTimeout(window.initCardParticles,30);
+  }
+  window.scrollTo(0,0);
+  playWhoosh();
+  // Init game-specific things on first visit
+  if(game==='dice')diceRenderAll();
+  if(game==='wheel')wheelDraw();
+  if(game==='8ball')ball8Init();
+}
+
+// ── Magic 8 Ball ──────────────────────────────────────────────
+const BALL8_ANSWERS={
+  en:[
+    // Positive
+    {text:"It is certain.",vibe:"yes"},
+    {text:"It is decidedly so.",vibe:"yes"},
+    {text:"Without a doubt.",vibe:"yes"},
+    {text:"Yes, definitely.",vibe:"yes"},
+    {text:"You may rely on it.",vibe:"yes"},
+    {text:"As I see it, yes.",vibe:"yes"},
+    {text:"Most likely.",vibe:"yes"},
+    {text:"Outlook good.",vibe:"yes"},
+    {text:"Yes.",vibe:"yes"},
+    {text:"Signs point to yes.",vibe:"yes"},
+    // Neutral
+    {text:"Reply hazy, try again.",vibe:"maybe"},
+    {text:"Ask again later.",vibe:"maybe"},
+    {text:"Better not tell you now.",vibe:"maybe"},
+    {text:"Cannot predict now.",vibe:"maybe"},
+    {text:"Concentrate and ask again.",vibe:"maybe"},
+    // Negative
+    {text:"Don't count on it.",vibe:"no"},
+    {text:"My reply is no.",vibe:"no"},
+    {text:"My sources say no.",vibe:"no"},
+    {text:"Outlook not so good.",vibe:"no"},
+    {text:"Very doubtful.",vibe:"no"},
+  ],
+  ar:[
+    // Positive
+    {text:"هذا مؤكد.",vibe:"yes"},
+    {text:"بالتأكيد نعم.",vibe:"yes"},
+    {text:"بلا شك.",vibe:"yes"},
+    {text:"نعم، بالتأكيد.",vibe:"yes"},
+    {text:"يمكنك الاعتماد على ذلك.",vibe:"yes"},
+    {text:"كما أرى، نعم.",vibe:"yes"},
+    {text:"على الأرجح.",vibe:"yes"},
+    {text:"التوقعات جيدة.",vibe:"yes"},
+    {text:"نعم.",vibe:"yes"},
+    {text:"المؤشرات تقول نعم.",vibe:"yes"},
+    // Neutral
+    {text:"الإجابة ضبابية، حاول مجدداً.",vibe:"maybe"},
+    {text:"اسأل مجدداً لاحقاً.",vibe:"maybe"},
+    {text:"من الأفضل ألا أخبرك الآن.",vibe:"maybe"},
+    {text:"لا يمكن التنبؤ الآن.",vibe:"maybe"},
+    {text:"ركّز واسأل مجدداً.",vibe:"maybe"},
+    // Negative
+    {text:"لا تعتمد على ذلك.",vibe:"no"},
+    {text:"ردي هو لا.",vibe:"no"},
+    {text:"مصادري تقول لا.",vibe:"no"},
+    {text:"التوقعات ليست جيدة.",vibe:"no"},
+    {text:"مشكوك فيه جداً.",vibe:"no"},
+  ],
+};
+
+const BALL8_COLORS={yes:'#00e5ff',maybe:'#ffd600',no:'#ff4444'};
+let ball8Shaking=false;
+let ball8LastAnswer=null;
+
+function ball8Init(){
+  const eight=document.getElementById('ball8-eight');
+  const fo=document.getElementById('ball8-answer-fo');
+  const vibe=document.getElementById('ball8-vibe');
+  const svg=document.getElementById('ball8-svg');
+  const triGlow=document.getElementById('ball8-tri-glow');
+  if(eight){eight.setAttribute('opacity','1');}
+  if(fo)fo.setAttribute('opacity','0');
+  if(vibe)vibe.textContent='';
+  if(svg)svg.style.transform='';
+  if(triGlow){triGlow.setAttribute('opacity','0');triGlow.setAttribute('stroke','#00e5ff');}
+  ball8Shaking=false;
+  ball8LastAnswer=null;
+}
+
+function ball8RevealSound(vibe){
+  try{
+    const ctx=new(window.AudioContext||window.webkitAudioContext)();
+    const master=ctx.createGain();
+    master.gain.setValueAtTime(0.18,ctx.currentTime);
+    master.connect(ctx.destination);
+
+    if(vibe==='yes'){
+      // Rising shimmer — ascending chime
+      [0,0.08,0.16,0.24].forEach((d,i)=>{
+        const o=ctx.createOscillator();
+        const g=ctx.createGain();
+        o.type='sine';
+        o.frequency.setValueAtTime([523,659,784,1047][i],ctx.currentTime+d);
+        g.gain.setValueAtTime(0,ctx.currentTime+d);
+        g.gain.linearRampToValueAtTime(0.6,ctx.currentTime+d+0.04);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d+0.5);
+        o.connect(g);g.connect(master);
+        o.start(ctx.currentTime+d);o.stop(ctx.currentTime+d+0.5);
+      });
+    } else if(vibe==='maybe'){
+      // Mysterious wobble
+      const o=ctx.createOscillator();
+      const g=ctx.createGain();
+      o.type='sine';
+      o.frequency.setValueAtTime(440,ctx.currentTime);
+      o.frequency.linearRampToValueAtTime(380,ctx.currentTime+0.3);
+      o.frequency.linearRampToValueAtTime(420,ctx.currentTime+0.6);
+      g.gain.setValueAtTime(0,ctx.currentTime);
+      g.gain.linearRampToValueAtTime(0.5,ctx.currentTime+0.05);
+      g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+0.8);
+      o.connect(g);g.connect(master);
+      o.start();o.stop(ctx.currentTime+0.85);
+    } else {
+      // Descending doom
+      [0,0.1,0.22].forEach((d,i)=>{
+        const o=ctx.createOscillator();
+        const g=ctx.createGain();
+        o.type='sawtooth';
+        o.frequency.setValueAtTime([220,185,155][i],ctx.currentTime+d);
+        g.gain.setValueAtTime(0,ctx.currentTime+d);
+        g.gain.linearRampToValueAtTime(0.4,ctx.currentTime+d+0.04);
+        g.gain.exponentialRampToValueAtTime(0.001,ctx.currentTime+d+0.45);
+        o.connect(g);g.connect(master);
+        o.start(ctx.currentTime+d);o.stop(ctx.currentTime+d+0.5);
+      });
+    }
+    setTimeout(()=>ctx.close(),2000);
+  } catch(e){}
+}
+
+function ball8Shake(){
+  if(ball8Shaking)return;
+  ball8Shaking=true;
+
+  const svg=document.getElementById('ball8-svg');
+  const eight=document.getElementById('ball8-eight');
+  const fo=document.getElementById('ball8-answer-fo');
+  const answerText=document.getElementById('ball8-answer-text');
+  const vibe=document.getElementById('ball8-vibe');
+  const triGlow=document.getElementById('ball8-tri-glow');
+
+  // Pick answer
+  const pool=appLang==='ar'?BALL8_ANSWERS.ar:BALL8_ANSWERS.en;
+  let answer;
+  do{ answer=pool[Math.floor(Math.random()*pool.length)]; }
+  while(answer===ball8LastAnswer&&pool.length>1);
+  ball8LastAnswer=answer;
+
+  // Reset
+  fo.setAttribute('opacity','0');
+  eight.setAttribute('opacity','1');
+  triGlow.setAttribute('opacity','0');
+  vibe.textContent='';
+  vibe.style.color='var(--gray)';
+
+  // Inject shake keyframes once
+  if(!document.getElementById('ball8-style')){
+    const s=document.createElement('style');
+    s.id='ball8-style';
+    s.textContent=`
+      @keyframes ball8shake{
+        0%{transform:rotate(0deg) scale(1);}
+        10%{transform:rotate(-8deg) scale(1.04);}
+        20%{transform:rotate(8deg) scale(1.07);}
+        30%{transform:rotate(-10deg) scale(1.06);}
+        40%{transform:rotate(10deg) scale(1.08);}
+        50%{transform:rotate(-6deg) scale(1.05);}
+        60%{transform:rotate(6deg) scale(1.03);}
+        70%{transform:rotate(-4deg) scale(1.02);}
+        85%{transform:rotate(3deg) scale(1.01);}
+        100%{transform:rotate(0deg) scale(1);}
+      }
+      @keyframes ball8glow{
+        0%,100%{filter:drop-shadow(0 0 0px transparent);}
+        50%{filter:drop-shadow(0 0 16px var(--ball8-glow,#00e5ff));}
+      }
+      #ball8-svg.shaking{animation:ball8shake 0.55s ease-in-out;}
+      #ball8-svg.glowing{animation:ball8glow 1s ease-in-out 2;}
+    `;
+    document.head.appendChild(s);
+  }
+
+  const color=BALL8_COLORS[answer.vibe];
+  svg.style.setProperty('--ball8-glow',color);
+  triGlow.setAttribute('stroke',color);
+
+  // Shake
+  svg.classList.remove('shaking','glowing');
+  void svg.offsetWidth;
+  svg.classList.add('shaking');
+
+  setTimeout(()=>{
+    svg.classList.remove('shaking');
+
+    // Fade out 8
+    let op=1;
+    const fadeOut=setInterval(()=>{
+      op-=0.12;
+      eight.setAttribute('opacity',Math.max(0,op));
+      if(op<=0){
+        clearInterval(fadeOut);
+        eight.setAttribute('opacity','0');
+
+        // Set answer
+        answerText.textContent=answer.text;
+        answerText.style.color=color;
+        answerText.style.letterSpacing=appLang==='ar'?'0px':'0.2px';
+        answerText.style.textTransform=appLang==='ar'?'none':'uppercase';
+        const len=answer.text.length;
+        answerText.style.fontSize=len>22?'11px':len>15?'12px':'13px';
+
+        // Fade in answer + triangle glow together
+        let aop=0;
+        const fadeIn=setInterval(()=>{
+          aop+=0.07;
+          const v=Math.min(1,aop);
+          fo.setAttribute('opacity',v);
+          triGlow.setAttribute('opacity',v*0.9);
+          if(aop>=1){
+            clearInterval(fadeIn);
+
+            // Play sound
+            ball8RevealSound(answer.vibe);
+
+            // Glow pulse on ball
+            svg.classList.add('glowing');
+
+            // Vibe label
+            vibe.textContent=t('ball8_vibe_'+answer.vibe);
+            vibe.style.color=color;
+
+            setTimeout(()=>{
+              svg.classList.remove('glowing');
+              ball8Shaking=false;
+            },2200);
+          }
+        },30);
+      }
+    },30);
+  },580);
+}
+
+S.pid=uid();
+buildCatGrid();
+S.playMode='online';
+wtbRenderNameInputs();
+</script>
+</body>
+</html>
