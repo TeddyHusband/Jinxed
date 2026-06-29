@@ -630,6 +630,16 @@ body.light .notice strong{color:#0d0d0d;}
     </div>
   </div>
 
+  <!-- HOST WAITING SCREEN -->
+  <div class="screen" id="s-host-wait">
+    <div class="card" style="justify-content:center;align-items:center;">
+      <canvas class="card-particles-canvas"></canvas>
+      <div class="big-title" style="text-align:center;" data-i18n-html data-i18n="waiting_for_players_title">waiting<br>for all</div>
+      <p class="body-text" style="text-align:center;" data-i18n="waiting_role_desc">Players are reading their roles...</p>
+      <div id="s-host-wait-list" style="width:100%;margin-top:16px;"></div>
+    </div>
+  </div>
+
   <!-- REVEAL -->
   <div class="screen" id="s-reveal">
     <div class="card card-flip-host">
@@ -649,7 +659,7 @@ body.light .notice strong{color:#0d0d0d;}
     <div class="card" style="justify-content:center;align-items:center;">
       <canvas class="card-particles-canvas"></canvas>
       <div id="role-container" style="width:100%;"></div>
-      <div class="bottom-row" style="justify-content:center;">
+      <div class="bottom-row" id="s-role-back" style="justify-content:center;">
         <div class="circ-wrap">
           <button class="circ dark" onclick="backReveal();playClick()">←</button>
           <div class="circ-label" data-i18n="back">Back</div>
@@ -668,7 +678,7 @@ body.light .notice strong{color:#0d0d0d;}
       <p class="body-text" data-i18n="everyone_knows">Everyone knows this — except the imposter(s).</p>
       <div class="sec-label" style="margin-top:16px;" data-i18n="all_roles">All Roles</div>
       <div id="g-roles" style="margin-bottom:auto;"></div>
-      <div class="bottom-row">
+      <div class="bottom-row" id="g-end-btn">
         <div class="circ-wrap">
           <button class="circ red" onclick="endGame();playClick()">✕</button>
           <div class="circ-label" data-i18n="end_round">End Round</div>
@@ -1300,6 +1310,11 @@ en:{
   enter_room_code:"Enter the room code.",
   room_not_found:"Room not found. Check the code.",
   game_already_started:"Game already started.",
+  im_ready:"I'm Ready ✓",
+  waiting_for_players_title:"waiting<br>for all",
+  waiting_role_desc:"Players are reading their roles...",
+  ready_label:"Ready",
+  waiting_label:"Waiting...",
 },
 ar:{
   jinxed_title:"جنكسد",
@@ -1412,6 +1427,11 @@ ar:{
   enter_room_code:"أدخل رمز الغرفة.",
   room_not_found:"الغرفة غير موجودة. تحقق من الرمز.",
   game_already_started:"اللعبة بدأت بالفعل.",
+  im_ready:"أنا جاهز ✓",
+  waiting_for_players_title:"انتظار<br>الجميع",
+  waiting_role_desc:"اللاعبون يقرؤون أدوارهم...",
+  ready_label:"جاهز",
+  waiting_label:"ينتظر...",
   wheel_title:"أدر\nالعجلة",
   wheel_desc:"أضف أي عدد من الخيارات، ثم أدر العجلة لاختيار واحد عشوائياً.",
   add_option:"أضف خياراً",
@@ -1693,6 +1713,7 @@ async function onlineStartGame(room){
     started:true,
     word:room.word,
     roles:room.roles,
+    ready:{},
   }).eq('code',room.code);
 }
 
@@ -1733,21 +1754,28 @@ function unsubscribeRoom(){
 // Called whenever Supabase pushes a room update
 function onRoomUpdate(data){
   if(!ROOM)return;
-  // Sync ROOM with latest from Supabase
   ROOM.players=data.players||ROOM.players;
   ROOM.started=data.started;
   ROOM.word=data.word||ROOM.word;
   ROOM.roles=data.roles||ROOM.roles;
+  ROOM.ready=data.ready||ROOM.ready||{};
 
   const activeScreen=document.querySelector('.screen.active')?.id;
 
   if(ROOM.started&&activeScreen==='s-lobby'){
-    // Host started the game — all guests jump to reveal
+    // Game just started — guests go to their own role screen
     S.revealed=new Set();
-    renderReveal();go('s-reveal');
-  } else if(activeScreen==='s-lobby'){
-    // Player joined or left — refresh lobby
+    if(!S.isHost)showOwnRole();
+  } else if(!ROOM.started&&activeScreen==='s-lobby'){
+    // Player joined or left — refresh lobby player list
     renderPlayers();
+  } else if(activeScreen==='s-host-wait'){
+    // Someone marked ready — update host waiting screen
+    renderHostWait();
+  } else if(data.ready&&activeScreen==='s-role'){
+    // All players ready — everyone moves to game screen
+    const allReady=ROOM.players.every(p=>ROOM.ready[p.id]);
+    if(allReady)showOnlineGame();
   }
 }
 
@@ -1944,13 +1972,76 @@ async function startGame(){
   ROOM.word=word;ROOM.roles=roles;ROOM.started=true;
   S.revealed=new Set();
   if(S.playMode==='online'){
-    await onlineStartGame(ROOM); // broadcast to all players via Supabase
-    // Host navigates themselves; guests navigate via onRoomUpdate
+    await onlineStartGame(ROOM);
+    // Host goes to waiting screen while guests read their roles
+    renderHostWait();
+    go('s-host-wait');
+  } else {
+    renderReveal();go('s-reveal'); // pass phone — show list
   }
-  showGame();
 }
 
-/* REVEAL — supports both List (ver 1.0) and Flip Card styles */
+// Online mode — each player sees only their own role privately
+function showOwnRole(){
+  const imp=ROOM.roles[S.pid]==='imposter';
+  if(imp)playImposter(); else playReveal();
+  document.getElementById('role-container').innerHTML=`
+    <div class="role-card ${imp?'imp':'crew'}">
+      <div class="role-icon">${imp?'🎭':'👁️'}</div>
+      <div class="role-title">${imp?t('imposter_title'):t('player_title')}</div>
+      ${imp
+        ?`<div class="role-hint">${t('imposter_hint')}</div>`
+        :`<div class="role-wlabel">${ROOM.mode==='word'?t('the_word_is'):t('the_drawing_is')}</div>
+          <div class="role-word">${ROOM.word}</div>
+          <div class="role-hint">${t('player_hint')}</div>`
+      }
+    </div>
+    <button class="pill-btn" id="ready-btn" style="margin-top:20px;" onclick="onlinePlayerReady();playClick()" data-i18n="im_ready">${t('im_ready')}</button>
+  `;
+  go('s-role');
+}
+
+// Online game screen — only shows word (not all roles), only host can end round
+function showOnlineGame(){
+  const imp=ROOM.roles[S.pid]==='imposter';
+  document.getElementById('g-mode-lbl').textContent=ROOM.mode==='word'?t('word_mode_full'):t('drawing_mode_full');
+  document.getElementById('g-cat-lbl').textContent=ROOM.cat;
+  document.getElementById('g-word').textContent=imp?'???':ROOM.word;
+  // Roles list — only show names, not roles (guests don't know who's who)
+  const gr=document.getElementById('g-roles');gr.innerHTML='';
+  ROOM.players.forEach(p=>{
+    const d=document.createElement('div');d.className='rev-item';
+    d.innerHTML=`<span class="rev-name">${p.name}${p.id===S.pid?' ('+t('you')+')':''}</span>`;
+    gr.appendChild(d);
+  });
+  // Only host sees End Round button
+  const endBtn=document.getElementById('g-end-btn');
+  if(endBtn)endBtn.style.display=S.isHost?'flex':'none';
+  go('s-game');
+}
+async function onlinePlayerReady(){
+  const ready={...(ROOM.ready||{}),[S.pid]:true};
+  ROOM.ready=ready;
+  await sb.from('rooms').update({ready}).eq('code',ROOM.code);
+  const btn=document.getElementById('ready-btn');
+  if(btn){btn.textContent='✓ Waiting for others...';btn.disabled=true;}
+}
+
+function renderHostWait(){
+  const list=document.getElementById('s-host-wait-list');
+  if(!list)return;
+  list.innerHTML='';
+  ROOM.players.forEach(p=>{
+    const ready=ROOM.ready&&ROOM.ready[p.id];
+    const d=document.createElement('div');d.className='pitem';
+    d.innerHTML=`<div class="ldot" style="background:${ready?'var(--green)':'var(--gray)'}"></div><span>${p.name}</span><span style="margin-left:auto;font-size:12px;color:${ready?'var(--green)':'var(--gray)'}">${ready?t('ready_label'):t('waiting_label')}</span>`;
+    list.appendChild(d);
+  });
+  // All players ready — host moves to game
+  const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready&&ROOM.ready[p.id]);
+  if(allReady)showOnlineGame();
+}
+
 let revealStyle='list';
 
 function setRevealStyle(style){
@@ -2930,7 +3021,7 @@ function diceRollAll(){
    GAME SWITCHER — nav tabs
 ══════════════════════════════════════ */
 const GAME_SCREENS={
-  jinxed:['s-home','s-create','s-join','s-lobby','s-reveal','s-role','s-game','s-over'],
+  jinxed:['s-home','s-create','s-join','s-lobby','s-reveal','s-role','s-online-role','s-host-wait','s-game','s-over'],
   wtb:['wtb-home','wtb-create','wtb-join','wtb-prompt-reveal','wtb-hand-list','wtb-hand-pick','wtb-voting','wtb-roundresult','wtb-final'],
   wheel:['wheel-home'],
   dice:['dice-home'],
