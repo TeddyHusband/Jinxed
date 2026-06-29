@@ -1701,6 +1701,7 @@ async function onlineJoinRoom(code,player){
     started:data.started,
     word:data.word,
     roles:data.roles,
+    ready:data.ready||{},
   });
   S.code=code;
   subscribeRoom(code);
@@ -1762,20 +1763,33 @@ function onRoomUpdate(data){
 
   const activeScreen=document.querySelector('.screen.active')?.id;
 
-  if(ROOM.started&&activeScreen==='s-lobby'){
-    // Game just started — guests go to their own role screen
+  // Game started — guests in lobby go to their own role screen
+  if(ROOM.started&&!S.isHost&&activeScreen==='s-lobby'){
     S.revealed=new Set();
-    if(!S.isHost)showOwnRole();
-  } else if(!ROOM.started&&activeScreen==='s-lobby'){
-    // Player joined or left — refresh lobby player list
+    showOwnRole();
+    return;
+  }
+
+  // Player joined/left — refresh lobby list
+  if(!ROOM.started&&activeScreen==='s-lobby'){
     renderPlayers();
-  } else if(activeScreen==='s-host-wait'){
-    // Someone marked ready — update host waiting screen
-    renderHostWait();
-  } else if(data.ready&&activeScreen==='s-role'){
-    // All players ready — everyone moves to game screen
-    const allReady=ROOM.players.every(p=>ROOM.ready[p.id]);
-    if(allReady)showOnlineGame();
+    return;
+  }
+
+  // Ready state changed — check if all done
+  if(ROOM.ready&&(activeScreen==='s-role'||activeScreen==='s-host-wait')){
+    const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready[p.id]);
+    if(allReady){
+      showOnlineGame();
+    } else if(activeScreen==='s-host-wait'){
+      renderHostWait();
+    }
+    return;
+  }
+
+  // Host ended round — non-host guests go to results
+  if(data.started===false&&!S.isHost&&activeScreen==='s-game'){
+    endGame();
   }
 }
 
@@ -1970,14 +1984,13 @@ async function startGame(){
   const word=getWord();if(!word)return err('l-err',t('custom_words_err2'));
   const roles=assignRoles(ROOM.players,ROOM.imps);
   ROOM.word=word;ROOM.roles=roles;ROOM.started=true;
+  ROOM.ready={[S.pid]:true}; // host auto-ready
   S.revealed=new Set();
   if(S.playMode==='online'){
     await onlineStartGame(ROOM);
-    // Host goes to waiting screen while guests read their roles
-    renderHostWait();
-    go('s-host-wait');
+    showOwnRole(); // host sees their own role privately
   } else {
-    renderReveal();go('s-reveal'); // pass phone — show list
+    renderReveal();go('s-reveal');
   }
 }
 
@@ -2024,7 +2037,10 @@ async function onlinePlayerReady(){
   ROOM.ready=ready;
   await sb.from('rooms').update({ready}).eq('code',ROOM.code);
   const btn=document.getElementById('ready-btn');
-  if(btn){btn.textContent='✓ Waiting for others...';btn.disabled=true;}
+  if(btn){btn.textContent='✓ '+t('waiting_label');btn.disabled=true;}
+  // Check immediately if all ready (in case this was the last one)
+  const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready[p.id]);
+  if(allReady)showOnlineGame();
 }
 
 function renderHostWait(){
@@ -2155,6 +2171,7 @@ function showRole(player){
 function backReveal(){renderReveal();go('s-reveal');}
 
 function showGame(){
+  if(S.playMode==='online'){showOnlineGame();return;}
   document.getElementById('g-word').textContent=ROOM.word;
   document.getElementById('g-mode-lbl').textContent=ROOM.mode==='word'?t('word_mode_full'):t('drawing_mode_full');
   document.getElementById('g-cat-lbl').textContent=ROOM.cat;
@@ -2168,9 +2185,13 @@ function showGame(){
   go('s-game');
 }
 
-function endGame(){
+async function endGame(){
   document.getElementById('o-word').textContent=ROOM.word;
   document.getElementById('o-imps').textContent=ROOM.players.filter(p=>ROOM.roles[p.id]==='imposter').map(p=>p.name).join(' & ')||t('none');
+  if(S.playMode==='online'&&S.isHost){
+    // Broadcast round end to all players
+    await sb.from('rooms').update({started:false,word:'',roles:{},ready:{}}).eq('code',ROOM.code);
+  }
   go('s-over');
 }
 
@@ -2644,8 +2665,25 @@ function wtbConfirmCreate(){
   if(WTB.playMode==='online'){
     const hostName=document.getElementById('wtb-host-name').value.trim();
     if(!hostName)return err('wtb-create-err',t('enter_name_err2'));
+    S.pid=S.pid||uid();S.name=hostName;S.isHost=true;
     WTB.code=rcode();
-    wtbSetupGame([hostName]);
+    const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
+    const hand=shuffleArray([...answers]).slice(0,WTB_HAND_SIZE);
+    const hostPlayer={id:S.pid,name:hostName,score:0,hand,submitted:false};
+    WTB.players=[hostPlayer];
+    WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];
+    const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
+    WTB.promptDeck=shuffleArray([...prompts]);
+    WTB.deck=shuffleArray([...answers]);
+    // Push to Supabase — reuse rooms table with game='wtb', imps=rounds, roles={judgeIdx,round}
+    sb.from('rooms').insert({
+      code:WTB.code,game:'wtb',mode:'wtb',cat:'wtb',
+      imps:WTB.rounds,players:WTB.players,
+      started:false,word:'',roles:{judgeIdx:0,round:1},
+    }).then(({error})=>{
+      if(error){console.error('WTB create error:',error);return;}
+      wtbSubscribeRoom(WTB.code);
+    });
     document.getElementById('wtb-room-code-display').textContent=WTB.code;
     document.getElementById('wtb-lobby-code-section').style.display='block';
     generateQR('wtb-qr','wtb');
@@ -2680,23 +2718,127 @@ function wtbRenderOnlinePlayers(){
   });
 }
 
-function wtbJoinRoom(){
+async function wtbJoinRoom(){
   const name=document.getElementById('wtb-j-name').value.trim();
-  const code=document.getElementById('wtb-j-code').value.trim();
+  const code=document.getElementById('wtb-j-code').value.trim().toUpperCase();
   if(!name)return err('wtb-j-err',t('enter_name_err2'));
   if(!code)return err('wtb-j-err',t('enter_room_code'));
-  if(!WTB.code||WTB.code!==code)return err('wtb-j-err',t('room_not_found'));
-  WTB.players.push({id:uid(),name,score:0,hand:wtbDraw(WTB_HAND_SIZE)});
-  document.getElementById('wtb-room-code-display').textContent=WTB.code;
+
+  // Fetch room from Supabase
+  const {data,error}=await sb.from('rooms').select('*').eq('code',code).eq('game','wtb').single();
+  if(error||!data)return err('wtb-j-err',t('room_not_found'));
+  if(data.started)return err('wtb-j-err',t('game_already_started'));
+
+  // Build player object with a fresh hand from server deck
+  const pid=uid();
+  const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
+  const hand=shuffleArray([...answers]).slice(0,WTB_HAND_SIZE);
+  const newPlayer={id:pid,name,score:0,hand,submitted:false};
+  const players=[...data.players,newPlayer];
+
+  // Push updated players to Supabase
+  await sb.from('rooms').update({players}).eq('code',code);
+
+  // Hydrate local WTB state
+  WTB.code=code;
+  WTB.playMode='online';
+  WTB.players=players;
+  WTB.rounds=data.imps; // reusing imps field for rounds in WTB
+  WTB.judgeIdx=data.roles?.judgeIdx||0;
+  WTB.round=data.roles?.round||1;
+  WTB.prompt=data.word||'';
+
+  // Store my pid
+  S.pid=pid;S.name=name;S.isHost=false;
+
+  // Subscribe to WTB room updates
+  wtbSubscribeRoom(code);
+
+  // Show in lobby
+  document.getElementById('wtb-room-code-display').textContent=code;
   document.getElementById('wtb-lobby-code-section').style.display='block';
   wtbRenderOnlinePlayers();
-  wtbUpdateRoundOptions();
   go('wtb-create');
+}
+
+/* ── WTB SUPABASE ─────────────────────────────────────────── */
+let wtbSupaChannel=null;
+
+function wtbSubscribeRoom(code){
+  if(wtbSupaChannel){sb.removeChannel(wtbSupaChannel);wtbSupaChannel=null;}
+  wtbSupaChannel=sb.channel('wtb:'+code)
+    .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rooms',filter:'code=eq.'+code},
+      payload=>onWtbRoomUpdate(payload.new))
+    .subscribe();
+}
+
+function onWtbRoomUpdate(data){
+  if(!WTB.code)return;
+  const activeScreen=document.querySelector('.screen.active')?.id;
+
+  // Sync players (scores, hands, submitted state)
+  if(data.players)WTB.players=data.players;
+  if(data.roles){WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;WTB.round=data.roles.round??WTB.round;}
+  if(data.word)WTB.prompt=data.word;
+
+  // Game started — guests go to prompt reveal
+  if(data.started&&!S.isHost&&activeScreen==='wtb-create'){
+    WTB.rounds=data.imps;
+    wtbShowPromptRevealOnline();
+    return;
+  }
+
+  // New round started
+  if(data.started&&data.word&&activeScreen==='wtb-hand-list'){
+    wtbShowPromptRevealOnline();
+    return;
+  }
+
+  // Player list updated in lobby
+  if(!data.started&&activeScreen==='wtb-create'){
+    wtbRenderOnlinePlayers();
+  }
+
+  // Submissions updated — refresh hand list for host/pass-phone
+  if(data.started&&(activeScreen==='wtb-hand-list'||activeScreen==='wtb-prompt-reveal')){
+    wtbRenderHandList();
+  }
+}
+
+function wtbShowPromptRevealOnline(){
+  const judge=WTB.players[WTB.judgeIdx];
+  document.getElementById('wtb-pr-round').textContent=WTB.round;
+  document.getElementById('wtb-pr-total').textContent=WTB.rounds;
+  document.getElementById('wtb-pr-prompt').textContent=WTB.prompt;
+  document.getElementById('wtb-pr-judge').textContent=judge?.name||'';
+  const nonJudgeCount=WTB.players.length-1;
+  document.getElementById('wtb-pr-judge-note').textContent=t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount});
+  go('wtb-prompt-reveal');
 }
 
 function wtbBeginGame(){
   if(WTB.players.length<3)return err('wtb-create-err',t('need_3_to_start'));
-  wtbStartRound();
+
+  if(WTB.playMode==='online'){
+    // Pick first prompt
+    const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
+    if(!WTB.promptDeck||WTB.promptDeck.length===0)WTB.promptDeck=shuffleArray([...prompts]);
+    WTB.prompt=WTB.promptDeck.pop();
+    WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];
+    WTB.players.forEach(p=>{p.submitted=false;});
+    // Push game start to Supabase
+    sb.from('rooms').update({
+      started:true,
+      word:WTB.prompt,
+      roles:{judgeIdx:WTB.judgeIdx,round:WTB.round},
+      players:WTB.players,
+      imps:WTB.rounds,
+    }).eq('code',WTB.code);
+    // Host goes to hand list — they are also a player (unless they're judge)
+    wtbShowPromptRevealOnline();
+  } else {
+    wtbStartRound();
+  }
 }
 
 function wtbStartRound(){
@@ -2729,26 +2871,35 @@ function wtbRenderHandList(){
   const list=document.getElementById('wtb-hand-playerlist');
   list.innerHTML='';
   const judge=WTB.players[WTB.judgeIdx];
+  const isOnline=WTB.playMode==='online';
+  const myPlayer=isOnline?WTB.players.find(p=>p.id===S.pid):null;
+  const amJudge=isOnline&&myPlayer&&myPlayer.id===judge?.id;
 
   WTB.players.forEach(p=>{
-    const isJudge=p.id===judge.id;
+    const isJudge=p.id===judge?.id;
     const done=p.submitted;
+    const isMe=isOnline&&p.id===S.pid;
+    const canPick=!isOnline||(isMe&&!isJudge); // online: only tap your own; pass-phone: anyone
+
     const d=document.createElement('div');
     d.className='tap-card'+(done?' done':'');
     if(isJudge){
-      d.innerHTML=`<div><div class="tap-name">${p.name}</div><div class="tap-hint" style="color:var(--accent);">${t('judging_not_playing')}</div></div><div class="tap-arr" style="color:var(--accent);">👑</div>`;
+      d.innerHTML=`<div><div class="tap-name">${p.name}${isMe?' ('+t('you')+')':''}</div><div class="tap-hint" style="color:var(--accent);">${t('judging_not_playing')}</div></div><div class="tap-arr" style="color:var(--accent);">👑</div>`;
     } else {
-      d.innerHTML=`<div><div class="tap-name">${p.name}</div><div class="tap-hint">${done?t('card_submitted'):t('tap_to_pick')}</div></div><div class="tap-arr">${done?'✓':'›'}</div>`;
-      if(!done)d.onclick=()=>{playClick();wtbOpenHand(p);};
+      d.innerHTML=`<div><div class="tap-name">${p.name}${isMe?' ('+t('you')+')':''}</div><div class="tap-hint">${done?t('card_submitted'):canPick?t('tap_to_pick'):'...'}</div></div><div class="tap-arr">${done?'✓':canPick?'›':''}</div>`;
+      if(canPick&&!done)d.onclick=()=>{playClick();wtbOpenHand(p);};
     }
     list.appendChild(d);
   });
 
-  const nonJudges=WTB.players.filter(p=>p.id!==judge.id);
-  if(nonJudges.every(p=>p.submitted)){
+  // Only host (online) or anyone (pass-phone) can advance to judging
+  const nonJudges=WTB.players.filter(p=>p.id!==judge?.id);
+  const allSubmitted=nonJudges.every(p=>p.submitted);
+  const canAdvance=allSubmitted&&(!isOnline||S.isHost||amJudge);
+  if(canAdvance){
     const btn=document.createElement('button');
     btn.className='pill-btn';btn.style.cssText='width:100%;border-radius:12px;padding:15px;margin-top:10px;font-size:15px;';
-    btn.textContent=t('all_cards_in_btn',{name:judge.name});
+    btn.textContent=t('all_cards_in_btn',{name:judge?.name||''});
     btn.onclick=()=>{playReveal();wtbShowJudging();};
     list.appendChild(btn);
   }
@@ -2777,8 +2928,12 @@ function wtbOpenHand(player){
 function wtbPlayCard(player,idx,card){
   playCardPlace();
   WTB.submissions.push({playerId:player.id,playerName:player.name,card});
-  player.hand.splice(idx,1); // remove played card
+  player.hand.splice(idx,1);
   player.submitted=true;
+  if(WTB.playMode==='online'){
+    // Sync updated players to Supabase
+    sb.from('rooms').update({players:WTB.players}).eq('code',WTB.code);
+  }
   wtbRenderHandList();
   go('wtb-hand-list');
 }
