@@ -1773,47 +1773,54 @@ function unsubscribeRoom(){
 function onRoomUpdate(data){
   console.log('[Jinxed] onRoomUpdate called. ROOM exists:',!!ROOM,'data:',data);
   if(!ROOM)return;
+  const wasStarted=ROOM.started;
   ROOM.players=data.players||ROOM.players;
   ROOM.started=data.started;
-  ROOM.word=data.word||ROOM.word;
+  ROOM.word=data.word!==undefined?data.word:ROOM.word;
   ROOM.roles=data.roles||ROOM.roles;
-  ROOM.ready=data.ready||ROOM.ready||{};
-  ROOM.lastResult=data.lastResult||ROOM.lastResult;
+  ROOM.ready=data.ready||{};
+  ROOM.lastResult=data.lastResult!==undefined?data.lastResult:ROOM.lastResult;
 
   const activeScreen=document.querySelector('.screen.active')?.id;
-  console.log('[Jinxed] activeScreen:',activeScreen,'ROOM.started:',ROOM.started,'S.isHost:',S.isHost,'S.pid:',S.pid,'ROOM.roles:',ROOM.roles);
+  console.log('[Jinxed] activeScreen:',activeScreen,'ROOM.started:',ROOM.started,'S.isHost:',S.isHost,'S.pid:',S.pid);
 
-  // Game started — guests in lobby go to their own role screen
-  if(ROOM.started&&!S.isHost&&activeScreen==='s-lobby'){
-    console.log('[Jinxed] → routing guest to showOwnRole()');
+  if(S.isHost)return; // host drives their own navigation locally
+
+  // Game started — guest is on lobby (fresh start) → go to own role
+  if(ROOM.started&&activeScreen==='s-lobby'){
     S.revealed=new Set();
     showOwnRole();
     return;
   }
 
-  // Player joined/left — refresh lobby list
+  // Player joined/left — refresh lobby list while waiting
   if(!ROOM.started&&activeScreen==='s-lobby'){
     renderPlayers();
     return;
   }
 
-  // Ready state changed — check if all done
-  if(ROOM.ready&&(activeScreen==='s-role'||activeScreen==='s-host-wait')){
+  // Ready state changed while guest waits on their role screen
+  if(activeScreen==='s-role'){
     const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready[p.id]);
-    if(allReady){
-      showOnlineGame();
-    } else if(activeScreen==='s-host-wait'){
-      renderHostWait();
-    }
+    if(allReady)showOnlineGame();
     return;
   }
 
-  // Host ended round — non-host guests show the broadcasted result
-  if(data.started===false&&!S.isHost&&activeScreen==='s-game'&&data.lastResult){
-    document.getElementById('o-word').textContent=data.lastResult.word;
-    const impNames=(data.lastResult.players||[]).filter(p=>data.lastResult.roles[p.id]==='imposter').map(p=>p.name).join(' & ');
-    document.getElementById('o-imps').textContent=impNames||t('none');
+  // Host ended the round — guest is on the game screen, show result
+  if(!ROOM.started&&activeScreen==='s-game'){
+    if(data.lastResult){
+      document.getElementById('o-word').textContent=data.lastResult.word;
+      const impNames=(data.lastResult.players||[]).filter(p=>data.lastResult.roles[p.id]==='imposter').map(p=>p.name).join(' & ');
+      document.getElementById('o-imps').textContent=impNames||t('none');
+    }
     go('s-over');
+    return;
+  }
+
+  // Host clicked "Play Again" — guest is on result screen, go back to lobby and wait
+  if(!ROOM.started&&activeScreen==='s-over'){
+    renderLobby();go('s-lobby');
+    return;
   }
 }
 
