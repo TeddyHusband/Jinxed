@@ -1802,6 +1802,7 @@ function onRoomUpdate(data){
   // Ready state changed while guest waits on their role screen
   if(activeScreen==='s-role'){
     const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready[p.id]);
+    console.log('[Jinxed] s-role poll check. ROOM.ready:',ROOM.ready,'players:',ROOM.players.map(p=>p.id),'allReady:',allReady);
     if(allReady)showOnlineGame();
     return;
   }
@@ -2064,16 +2065,20 @@ function showOnlineGame(){
   go('s-game');
 }
 async function onlinePlayerReady(){
+  console.log('[Jinxed] onlinePlayerReady called. ROOM.code:',ROOM?.code,'S.pid:',S.pid,'ROOM.players:',ROOM?.players);
   // Fetch the latest ready state first to avoid overwriting other players' clicks
-  const {data:fresh}=await sb.from('rooms').select('ready').eq('code',ROOM.code).single();
+  const {data:fresh,error:fetchErr}=await sb.from('rooms').select('ready').eq('code',ROOM.code).single();
+  console.log('[Jinxed] fresh ready fetch:',{fresh,fetchErr});
   const currentReady=fresh?.ready||ROOM.ready||{};
   const ready={...currentReady,[S.pid]:true};
   ROOM.ready=ready;
-  await sb.from('rooms').update({ready}).eq('code',ROOM.code);
+  const {error:updateErr}=await sb.from('rooms').update({ready}).eq('code',ROOM.code).select();
+  console.log('[Jinxed] ready write result:',{ready,updateErr});
   const btn=document.getElementById('ready-btn');
   if(btn){btn.textContent='✓ '+t('waiting_label');btn.disabled=true;}
   // Check immediately if all ready (in case this was the last one)
   const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready[p.id]);
+  console.log('[Jinxed] allReady check:',allReady,'players:',ROOM.players.map(p=>p.id),'ready keys:',Object.keys(ROOM.ready));
   if(allReady)showOnlineGame();
 }
 
