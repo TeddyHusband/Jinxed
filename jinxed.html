@@ -1784,7 +1784,17 @@ function onRoomUpdate(data){
   const activeScreen=document.querySelector('.screen.active')?.id;
   console.log('[Jinxed] activeScreen:',activeScreen,'ROOM.started:',ROOM.started,'S.isHost:',S.isHost,'S.pid:',S.pid);
 
-  if(S.isHost)return; // host drives their own navigation locally
+  // Host: refresh player list while in lobby (waiting for joins)
+  if(S.isHost){
+    if(activeScreen==='s-lobby')renderPlayers();
+    // Host: refresh ready dots while waiting on their own role screen
+    if(activeScreen==='s-role'){
+      const allReady=ROOM.players.length>0&&ROOM.players.every(p=>ROOM.ready[p.id]);
+      console.log('[Jinxed][HOST] s-role poll check. ROOM.ready:',ROOM.ready,'players:',ROOM.players.map(p=>p.id),'allReady:',allReady);
+      if(allReady)showOnlineGame();
+    }
+    return; // host never auto-navigates off other screens — they drive their own flow
+  }
 
   // Game started — guest is on lobby (fresh start) → go to own role
   if(ROOM.started&&activeScreen==='s-lobby'){
