@@ -1743,13 +1743,25 @@ function subscribeRoom(code){
       table:'rooms',
       filter:'code=eq.'+code,
     },payload=>{
+      console.log('[Jinxed] room update received:',payload.new);
       onRoomUpdate(payload.new);
     })
-    .subscribe();
+    .subscribe((status)=>{
+      console.log('[Jinxed] subscription status:',status);
+    });
+
+  // Fallback polling in case realtime misses an event (network blips, etc.)
+  if(window.__jinxedPoll)clearInterval(window.__jinxedPoll);
+  window.__jinxedPoll=setInterval(async()=>{
+    if(!ROOM?.code)return;
+    const {data}=await sb.from('rooms').select('*').eq('code',ROOM.code).single();
+    if(data)onRoomUpdate(data);
+  },2500);
 }
 
 function unsubscribeRoom(){
   if(supaChannel){sb.removeChannel(supaChannel);supaChannel=null;}
+  if(window.__jinxedPoll){clearInterval(window.__jinxedPoll);window.__jinxedPoll=null;}
 }
 
 // Called whenever Supabase pushes a room update
