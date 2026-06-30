@@ -1685,7 +1685,9 @@ async function onlineCreateRoom(room){
 
 // Fetch room from Supabase and subscribe
 async function onlineJoinRoom(code,player){
+  console.log('[Jinxed] joining room:',code,player);
   const {data,error}=await sb.from('rooms').select('*').eq('code',code).single();
+  console.log('[Jinxed] join fetch result:',{data,error});
   if(error||!data){err('j-err',t('room_not_found'));return;}
   if(data.started){err('j-err',t('game_already_started'));return;}
   // Add player to room
@@ -1704,6 +1706,7 @@ async function onlineJoinRoom(code,player){
     ready:data.ready||{},
   });
   S.code=code;
+  console.log('[Jinxed] ROOM hydrated:',ROOM,'S.isHost:',S.isHost,'S.pid:',S.pid);
   subscribeRoom(code);
   renderLobby();go('s-lobby');
 }
@@ -1766,6 +1769,7 @@ function unsubscribeRoom(){
 
 // Called whenever Supabase pushes a room update
 function onRoomUpdate(data){
+  console.log('[Jinxed] onRoomUpdate called. ROOM exists:',!!ROOM,'data:',data);
   if(!ROOM)return;
   ROOM.players=data.players||ROOM.players;
   ROOM.started=data.started;
@@ -1774,9 +1778,11 @@ function onRoomUpdate(data){
   ROOM.ready=data.ready||ROOM.ready||{};
 
   const activeScreen=document.querySelector('.screen.active')?.id;
+  console.log('[Jinxed] activeScreen:',activeScreen,'ROOM.started:',ROOM.started,'S.isHost:',S.isHost,'S.pid:',S.pid,'ROOM.roles:',ROOM.roles);
 
   // Game started — guests in lobby go to their own role screen
   if(ROOM.started&&!S.isHost&&activeScreen==='s-lobby'){
+    console.log('[Jinxed] → routing guest to showOwnRole()');
     S.revealed=new Set();
     showOwnRole();
     return;
