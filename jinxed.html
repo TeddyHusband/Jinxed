@@ -1778,6 +1778,7 @@ function onRoomUpdate(data){
   ROOM.word=data.word||ROOM.word;
   ROOM.roles=data.roles||ROOM.roles;
   ROOM.ready=data.ready||ROOM.ready||{};
+  ROOM.lastResult=data.lastResult||ROOM.lastResult;
 
   const activeScreen=document.querySelector('.screen.active')?.id;
   console.log('[Jinxed] activeScreen:',activeScreen,'ROOM.started:',ROOM.started,'S.isHost:',S.isHost,'S.pid:',S.pid,'ROOM.roles:',ROOM.roles);
@@ -1807,9 +1808,12 @@ function onRoomUpdate(data){
     return;
   }
 
-  // Host ended round — non-host guests go to results
-  if(data.started===false&&!S.isHost&&activeScreen==='s-game'){
-    endGame();
+  // Host ended round — non-host guests show the broadcasted result
+  if(data.started===false&&!S.isHost&&activeScreen==='s-game'&&data.lastResult){
+    document.getElementById('o-word').textContent=data.lastResult.word;
+    const impNames=(data.lastResult.players||[]).filter(p=>data.lastResult.roles[p.id]==='imposter').map(p=>p.name).join(' & ');
+    document.getElementById('o-imps').textContent=impNames||t('none');
+    go('s-over');
   }
 }
 
@@ -2209,8 +2213,12 @@ async function endGame(){
   document.getElementById('o-word').textContent=ROOM.word;
   document.getElementById('o-imps').textContent=ROOM.players.filter(p=>ROOM.roles[p.id]==='imposter').map(p=>p.name).join(' & ')||t('none');
   if(S.playMode==='online'&&S.isHost){
-    // Broadcast round end to all players
-    await sb.from('rooms').update({started:false,word:'',roles:{},ready:{}}).eq('code',ROOM.code);
+    // Broadcast the final result first (lastResult), then guests read it via onRoomUpdate
+    // before we reset started/word/roles for the next round
+    await sb.from('rooms').update({
+      started:false,
+      lastResult:{word:ROOM.word,roles:ROOM.roles,players:ROOM.players},
+    }).eq('code',ROOM.code);
   }
   go('s-over');
 }
@@ -2223,8 +2231,11 @@ function playAgain(){
     S.revealed=new Set();
     renderReveal();go('s-reveal');
   } else {
-    ROOM.started=false;ROOM.word='';ROOM.roles={};
+    ROOM.started=false;ROOM.word='';ROOM.roles={};ROOM.lastResult=null;
     S.revealed=new Set();
+    if(S.isHost){
+      sb.from('rooms').update({word:'',roles:{},lastResult:null}).eq('code',ROOM.code);
+    }
     renderLobby();go('s-lobby');
   }
 }
