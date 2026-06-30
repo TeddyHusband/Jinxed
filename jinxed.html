@@ -2064,7 +2064,10 @@ function showOnlineGame(){
   go('s-game');
 }
 async function onlinePlayerReady(){
-  const ready={...(ROOM.ready||{}),[S.pid]:true};
+  // Fetch the latest ready state first to avoid overwriting other players' clicks
+  const {data:fresh}=await sb.from('rooms').select('ready').eq('code',ROOM.code).single();
+  const currentReady=fresh?.ready||ROOM.ready||{};
+  const ready={...currentReady,[S.pid]:true};
   ROOM.ready=ready;
   await sb.from('rooms').update({ready}).eq('code',ROOM.code);
   const btn=document.getElementById('ready-btn');
