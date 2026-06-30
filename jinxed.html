@@ -1713,12 +1713,14 @@ async function onlineJoinRoom(code,player){
 
 // Push game start to Supabase (broadcasts to all players)
 async function onlineStartGame(room){
-  await sb.from('rooms').update({
+  const {error,data}=await sb.from('rooms').update({
     started:true,
     word:room.word,
     roles:room.roles,
     ready:{},
-  }).eq('code',room.code);
+  }).eq('code',room.code).select();
+  console.log('[Jinxed] onlineStartGame write result:',{error,data});
+  if(error)console.error('[Jinxed] FAILED to start game in Supabase:',error);
 }
 
 // Remove player from room on leave
