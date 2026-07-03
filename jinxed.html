@@ -1817,19 +1817,23 @@ function onRoomUpdate(data){
     return;
   }
 
-  // Host ended the round — guest is on the game screen, show result
-  if(!ROOM.started&&activeScreen==='s-game'){
-    if(data.lastResult){
-      document.getElementById('o-word').textContent=data.lastResult.word;
-      const impNames=(data.lastResult.players||[]).filter(p=>data.lastResult.roles[p.id]==='imposter').map(p=>p.name).join(' & ');
-      document.getElementById('o-imps').textContent=impNames||t('none');
-    }
+  // lastResult arrived — guest is on game screen, show result with imposter revealed
+  if(data.lastResult&&activeScreen==='s-game'){
+    const lr=data.lastResult;
+    document.getElementById('o-word').textContent=lr.word;
+    document.getElementById('o-imps').textContent=lr.impNames||(lr.players||[]).filter(p=>lr.roles[p.id]==='imposter').map(p=>p.name).join(' & ')||t('none');
     go('s-over');
     return;
   }
 
-  // Host clicked "Play Again" — guest is on result screen, go back to lobby and wait
-  if(!ROOM.started&&activeScreen==='s-over'){
+  // Host set started:false after result — if guest somehow missed lastResult and is still on s-game
+  if(!ROOM.started&&activeScreen==='s-game'){
+    go('s-over');
+    return;
+  }
+
+  // Host clicked "Play Again" — guest is on result screen, go back to lobby
+  if(!ROOM.started&&activeScreen==='s-over'&&!data.lastResult){
     renderLobby();go('s-lobby');
     return;
   }
@@ -2235,15 +2239,21 @@ function showGame(){
 }
 
 async function endGame(){
-  document.getElementById('o-word').textContent=ROOM.word;
-  document.getElementById('o-imps').textContent=ROOM.players.filter(p=>ROOM.roles[p.id]==='imposter').map(p=>p.name).join(' & ')||t('none');
+  const word=ROOM.word;
+  const roles=ROOM.roles;
+  const players=ROOM.players;
+  const impNames=players.filter(p=>roles[p.id]==='imposter').map(p=>p.name).join(' & ')||t('none');
+  document.getElementById('o-word').textContent=word;
+  document.getElementById('o-imps').textContent=impNames;
   if(S.playMode==='online'&&S.isHost){
-    // Broadcast the final result first (lastResult), then guests read it via onRoomUpdate
-    // before we reset started/word/roles for the next round
+    // Step 1: broadcast lastResult WITH started still true so guests know it's a result
     await sb.from('rooms').update({
-      started:false,
-      lastResult:{word:ROOM.word,roles:ROOM.roles,players:ROOM.players},
+      lastResult:{word,roles,players,impNames},
     }).eq('code',ROOM.code);
+    // Step 2: small delay then set started:false so guests transition to s-over
+    setTimeout(async()=>{
+      await sb.from('rooms').update({started:false}).eq('code',ROOM.code);
+    },300);
   }
   go('s-over');
 }
