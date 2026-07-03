@@ -1717,7 +1717,7 @@ async function onlineStartGame(room){
     started:true,
     word:room.word,
     roles:room.roles,
-    ready:{},
+    ready:room.ready, // includes host as pre-ready: {[hostPid]:true}
   }).eq('code',room.code).select();
   console.log('[Jinxed] onlineStartGame write result:',{error,data});
   if(error)console.error('[Jinxed] FAILED to start game in Supabase:',error);
@@ -1777,8 +1777,8 @@ function onRoomUpdate(data){
   ROOM.players=data.players||ROOM.players;
   ROOM.started=data.started;
   ROOM.word=data.word!==undefined?data.word:ROOM.word;
-  ROOM.roles=data.roles||ROOM.roles;
-  ROOM.ready=data.ready||{};
+  ROOM.roles=(data.roles&&Object.keys(data.roles).length)?data.roles:ROOM.roles;
+  ROOM.ready=data.ready||ROOM.ready||{};
   ROOM.lastResult=data.lastResult!==undefined?data.lastResult:ROOM.lastResult;
 
   const activeScreen=document.querySelector('.screen.active')?.id;
