@@ -1300,6 +1300,7 @@ en:{
   cat_random:"Random",
   wtb_start_game:"Start Game →",
   wtb_waiting_players:"Waiting for players...",
+  waiting_for_host:"Waiting for the host to start...",
   enter_name_err:"Enter your name first.",
   enter_name_err2:"Enter your name.",
   pick_funniest_inline:", pick the funniest answer.",
@@ -1417,6 +1418,7 @@ ar:{
   cat_random:"عشوائي",
   wtb_start_game:"ابدأ اللعبة ←",
   wtb_waiting_players:"في انتظار اللاعبين...",
+  waiting_for_host:"في انتظار بدء المضيف...",
   enter_name_err:"أدخل اسمك أولاً.",
   enter_name_err2:"أدخل اسمك.",
   pick_funniest_inline:"، اختر الإجابة الأطرف.",
@@ -2644,9 +2646,13 @@ function wtbStartCreate(mode){
   document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
   // Reset any leftover state from a previous mode visit
   document.getElementById('wtb-lobby-code-section').style.display='none';
+  document.getElementById('wtb-start-btn').style.display='';
   document.getElementById('wtb-start-btn').textContent=t('wtb_start_game');
   document.getElementById('wtb-start-btn').dataset.state='';
   document.getElementById('wtb-start-btn').onclick=()=>{playClick();wtbConfirmCreate();};
+  // Clear any guest waiting message
+  const guestMsg=document.getElementById('wtb-guest-wait-msg');
+  if(guestMsg)guestMsg.remove();
   WTB.code=null;
   if(mode==='phone'){WTB.playerCount=3;document.getElementById('wtb-player-disp').textContent=WTB.playerCount;wtbRenderNameInputs();}
   wtbUpdateRoundOptions();
@@ -2820,9 +2826,24 @@ async function wtbJoinRoom(){
   // Subscribe to WTB room updates
   wtbSubscribeRoom(code);
 
-  // Show in lobby
+  // Show in lobby — guest view (no start button)
   document.getElementById('wtb-room-code-display').textContent=code;
   document.getElementById('wtb-lobby-code-section').style.display='block';
+  // Hide start button for guests, show waiting message instead
+  const startBtn=document.getElementById('wtb-start-btn');
+  if(startBtn){
+    startBtn.style.display='none';
+  }
+  // Show waiting message
+  let waitMsg=document.getElementById('wtb-guest-wait-msg');
+  if(!waitMsg){
+    waitMsg=document.createElement('p');
+    waitMsg.id='wtb-guest-wait-msg';
+    waitMsg.className='body-text';
+    waitMsg.style.cssText='text-align:center;margin-top:8px;';
+    startBtn?.parentNode?.insertBefore(waitMsg,startBtn);
+  }
+  waitMsg.textContent=t('waiting_for_host');
   wtbRenderOnlinePlayers();
   go('wtb-create');
 }
