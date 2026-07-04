@@ -2853,42 +2853,62 @@ let wtbSupaChannel=null;
 
 function wtbSubscribeRoom(code){
   if(wtbSupaChannel){sb.removeChannel(wtbSupaChannel);wtbSupaChannel=null;}
+  if(window.__wtbPoll)clearInterval(window.__wtbPoll);
   wtbSupaChannel=sb.channel('wtb:'+code)
     .on('postgres_changes',{event:'UPDATE',schema:'public',table:'rooms',filter:'code=eq.'+code},
-      payload=>onWtbRoomUpdate(payload.new))
-    .subscribe();
+      payload=>{
+        console.log('[WTB] room update received:',payload.new);
+        onWtbRoomUpdate(payload.new);
+      })
+    .subscribe(status=>console.log('[WTB] subscription status:',status));
+  // Polling fallback every 2.5s
+  window.__wtbPoll=setInterval(async()=>{
+    if(!WTB.code)return;
+    const {data}=await sb.from('rooms').select('*').eq('code',WTB.code).single();
+    if(data){
+      console.log('[WTB] poll activeScreen:',document.querySelector('.screen.active')?.id,'started:',data.started);
+      onWtbRoomUpdate(data);
+    }
+  },2500);
 }
 
 function onWtbRoomUpdate(data){
   if(!WTB.code)return;
   const activeScreen=document.querySelector('.screen.active')?.id;
 
-  // Sync players (scores, hands, submitted state)
+  // Sync all state from Supabase first
   if(data.players)WTB.players=data.players;
-  if(data.roles){WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;WTB.round=data.roles.round??WTB.round;}
+  if(data.roles){
+    WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;
+    WTB.round=data.roles.round??WTB.round;
+  }
   if(data.word)WTB.prompt=data.word;
+  if(data.imps)WTB.rounds=data.imps;
 
-  // Game started — guests go to prompt reveal
+  console.log('[WTB] onWtbRoomUpdate. activeScreen:',activeScreen,'started:',data.started,'isHost:',S.isHost,'prompt:',WTB.prompt);
+
+  // Game started — guests on lobby go to prompt reveal
   if(data.started&&!S.isHost&&activeScreen==='wtb-create'){
-    WTB.rounds=data.imps;
     wtbShowPromptRevealOnline();
     return;
   }
 
-  // New round started
-  if(data.started&&data.word&&activeScreen==='wtb-hand-list'){
+  // New round — everyone on hand-list goes to new prompt reveal
+  if(data.started&&data.word&&(activeScreen==='wtb-hand-list'||activeScreen==='wtb-prompt-reveal')){
     wtbShowPromptRevealOnline();
     return;
   }
 
-  // Player list updated in lobby
+  // Player joined — update lobby list
   if(!data.started&&activeScreen==='wtb-create'){
     wtbRenderOnlinePlayers();
+    return;
   }
 
-  // Submissions updated — refresh hand list for host/pass-phone
-  if(data.started&&(activeScreen==='wtb-hand-list'||activeScreen==='wtb-prompt-reveal')){
+  // Submissions updated — refresh hand list
+  if(data.started&&activeScreen==='wtb-hand-list'){
     wtbRenderHandList();
+    return;
   }
 }
 
@@ -3272,6 +3292,16 @@ const GAME_SCREENS={
 let currentGame='jinxed';
 
 function switchGame(game){
+  // Stop Jinxed polling when leaving Jinxed
+  if(game!=='jinxed'&&window.__jinxedPoll){
+    clearInterval(window.__jinxedPoll);
+    window.__jinxedPoll=null;
+  }
+  // Stop WTB polling when leaving WTB
+  if(game!=='wtb'&&window.__wtbPoll){
+    clearInterval(window.__wtbPoll);
+    window.__wtbPoll=null;
+  }
   if(currentGame===game)return;
   currentGame=game;
   // Update nav tabs
