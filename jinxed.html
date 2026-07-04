@@ -2642,8 +2642,7 @@ let WTB={
 
 function wtbStartCreate(mode){
   WTB.playMode=mode;
-  document.getElementById('wtb-online-name-section').style.display=mode==='online'?'block':'none';
-  document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
+  document.getElementById('wtb-online-name-section').style.display=mode==='online'?'block':'none';  document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
   // Reset any leftover state from a previous mode visit
   document.getElementById('wtb-lobby-code-section').style.display='none';
   document.getElementById('wtb-start-btn').style.display='';
@@ -2758,9 +2757,13 @@ function wtbConfirmCreate(){
     });
     document.getElementById('wtb-room-code-display').textContent=WTB.code;
     document.getElementById('wtb-lobby-code-section').style.display='block';
+    // Hide name input since host already entered their name
+    const nameSection=document.getElementById('wtb-online-name-section');
+    if(nameSection)nameSection.style.display='none';
     generateQR('wtb-qr','wtb');
     document.getElementById('wtb-start-btn').textContent=t('wtb_waiting_players');
     document.getElementById('wtb-start-btn').dataset.state='waiting';
+    document.getElementById('wtb-start-btn').style.opacity='0.6';
     document.getElementById('wtb-start-btn').onclick=()=>{playClick();wtbBeginGame();};
     wtbRenderOnlinePlayers();
   } else {
@@ -2784,10 +2787,27 @@ function wtbRenderOnlinePlayers(){
   if(!wrap)return;
   wrap.innerHTML='';
   WTB.players.forEach(p=>{
+    const isMe=p.id===S.pid;
     const d=document.createElement('div');d.className='pitem';
-    d.innerHTML=`<div class="ldot"></div><span>${p.name}</span>`;
+    d.innerHTML=`<div class="ldot"></div><span>${p.name}${isMe?' ('+t('you')+')':''}</span>`;
     wrap.appendChild(d);
   });
+  // Update start button based on player count — only for host
+  if(S.isHost){
+    const btn=document.getElementById('wtb-start-btn');
+    if(btn){
+      if(WTB.players.length>=3){
+        btn.textContent=t('wtb_start_game');
+        btn.dataset.state='ready';
+        btn.style.opacity='1';
+      } else {
+        btn.textContent=t('wtb_waiting_players');
+        btn.dataset.state='waiting';
+        btn.style.opacity='0.6';
+      }
+      btn.onclick=()=>{playClick();wtbBeginGame();};
+    }
+  }
 }
 
 async function wtbJoinRoom(){
@@ -2923,25 +2943,24 @@ function wtbShowPromptRevealOnline(){
   go('wtb-prompt-reveal');
 }
 
-function wtbBeginGame(){
+async function wtbBeginGame(){
   if(WTB.players.length<3)return err('wtb-create-err',t('need_3_to_start'));
 
   if(WTB.playMode==='online'){
-    // Pick first prompt
     const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
     if(!WTB.promptDeck||WTB.promptDeck.length===0)WTB.promptDeck=shuffleArray([...prompts]);
     WTB.prompt=WTB.promptDeck.pop();
     WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];
     WTB.players.forEach(p=>{p.submitted=false;});
-    // Push game start to Supabase
-    sb.from('rooms').update({
+    const {error}=await sb.from('rooms').update({
       started:true,
       word:WTB.prompt,
       roles:{judgeIdx:WTB.judgeIdx,round:WTB.round},
       players:WTB.players,
       imps:WTB.rounds,
     }).eq('code',WTB.code);
-    // Host goes to hand list — they are also a player (unless they're judge)
+    if(error){console.error('[WTB] wtbBeginGame write error:',error);return;}
+    console.log('[WTB] game started. code:',WTB.code,'prompt:',WTB.prompt);
     wtbShowPromptRevealOnline();
   } else {
     wtbStartRound();
