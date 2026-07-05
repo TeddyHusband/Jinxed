@@ -1721,7 +1721,8 @@ async function onlineStartGame(room){
     started:true,
     word:room.word,
     roles:room.roles,
-    ready:room.ready, // includes host as pre-ready: {[hostPid]:true}
+    ready:room.ready,
+    lastResult:null, // clear previous round result
   }).eq('code',room.code).select();
   console.log('[Jinxed] onlineStartGame write result:',{error,data});
   if(error)console.error('[Jinxed] FAILED to start game in Supabase:',error);
@@ -1780,9 +1781,9 @@ function onRoomUpdate(data){
   const wasStarted=ROOM.started;
   ROOM.players=data.players||ROOM.players;
   ROOM.started=data.started;
-  ROOM.word=data.word!==undefined?data.word:ROOM.word;
-  ROOM.roles=(data.roles&&Object.keys(data.roles).length)?data.roles:ROOM.roles;
-  ROOM.ready=data.ready||ROOM.ready||{};
+  if(data.word)ROOM.word=data.word; // only update if non-empty
+  if(data.roles&&Object.keys(data.roles).length)ROOM.roles=data.roles; // only if non-empty
+  if(data.ready&&Object.keys(data.ready).length)ROOM.ready=data.ready; // only if non-empty
   ROOM.lastResult=data.lastResult!==undefined?data.lastResult:ROOM.lastResult;
 
   const activeScreen=document.querySelector('.screen.active')?.id;
@@ -2037,8 +2038,10 @@ async function startGame(){
   ROOM.ready={[S.pid]:true}; // host auto-ready
   S.revealed=new Set();
   if(S.playMode==='online'){
-    await onlineStartGame(ROOM);
-    showOwnRole(); // host sees their own role privately
+    await onlineStartGame(ROOM); // wait for write to complete first
+    // Re-apply roles locally in case polling overwrote them during the await
+    ROOM.roles=roles;ROOM.word=word;ROOM.started=true;
+    showOwnRole();
   } else {
     renderReveal();go('s-reveal');
   }
@@ -2262,7 +2265,7 @@ async function endGame(){
   go('s-over');
 }
 
-function playAgain(){
+async function playAgain(){
   if(S.playMode==='phone'){
     const word=getWord();
     const roles=assignRoles(ROOM.players,ROOM.imps);
@@ -2270,10 +2273,10 @@ function playAgain(){
     S.revealed=new Set();
     renderReveal();go('s-reveal');
   } else {
-    ROOM.started=false;ROOM.word='';ROOM.roles={};ROOM.lastResult=null;
+    ROOM.started=false;ROOM.word='';ROOM.roles={};ROOM.lastResult=null;ROOM.ready={};
     S.revealed=new Set();
     if(S.isHost){
-      sb.from('rooms').update({word:'',roles:{},lastResult:null}).eq('code',ROOM.code);
+      await sb.from('rooms').update({word:'',roles:{},lastResult:null,started:false,ready:{}}).eq('code',ROOM.code);
     }
     renderLobby();go('s-lobby');
   }
