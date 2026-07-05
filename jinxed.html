@@ -2737,7 +2737,7 @@ function wtbConfirmCreate(){
     const hostName=document.getElementById('wtb-host-name').value.trim();
     if(!hostName)return err('wtb-create-err',t('enter_name_err2'));
     S.pid=S.pid||uid();S.name=hostName;S.isHost=true;
-    WTB.code=rcode();
+    if(!WTB.code)WTB.code=rcode(); // only generate once
     const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
     const hand=shuffleArray([...answers]).slice(0,WTB_HAND_SIZE);
     const hostPlayer={id:S.pid,name:hostName,score:0,hand,submitted:false};
@@ -2746,12 +2746,12 @@ function wtbConfirmCreate(){
     const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
     WTB.promptDeck=shuffleArray([...prompts]);
     WTB.deck=shuffleArray([...answers]);
-    // Push to Supabase — reuse rooms table with game='wtb', imps=rounds, roles={judgeIdx,round}
-    sb.from('rooms').insert({
+    // Upsert to Supabase — safe to call multiple times with same code
+    sb.from('rooms').upsert({
       code:WTB.code,game:'wtb',mode:'wtb',cat:'wtb',
       imps:WTB.rounds,players:WTB.players,
       started:false,word:'',roles:{judgeIdx:0,round:1},
-    }).then(({error})=>{
+    },{onConflict:'code'}).then(({error})=>{
       if(error){console.error('WTB create error:',error);return;}
       wtbSubscribeRoom(WTB.code);
     });
