@@ -757,11 +757,13 @@ body.light .notice strong{color:#0d0d0d;}
         <div id="wtb-name-inputs" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;"></div>
       </div>
 
+      <div id="wtb-rounds-section">
       <div class="sec-label" data-i18n="number_of_rounds">Number of Rounds</div>
       <div class="counter-row">
         <button class="c-btn" onclick="wtbChRounds(-1);playClick()">−</button>
         <div class="c-val" id="wtb-rounds-disp">5</div>
         <button class="c-btn" onclick="wtbChRounds(1);playClick()">+</button>
+      </div>
       </div>
       <div class="err" id="wtb-create-err"></div>
       <div id="wtb-lobby-code-section" style="display:none;margin-bottom:16px;">
@@ -2643,6 +2645,8 @@ let WTB={
 function wtbStartCreate(mode){
   WTB.playMode=mode;
   document.getElementById('wtb-online-name-section').style.display=mode==='online'?'block':'none';
+  const roundsSec=document.getElementById('wtb-rounds-section');
+  if(roundsSec)roundsSec.style.display='block';
   document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
   document.getElementById('wtb-lobby-code-section').style.display='none';
   document.getElementById('wtb-start-btn').style.display='';
@@ -2852,14 +2856,16 @@ async function wtbJoinRoom(){
   // Subscribe to WTB room updates
   wtbSubscribeRoom(code);
 
-  // Show in lobby — guest view (no start button)
+  // Show in lobby — guest view (no start button, no name input)
   document.getElementById('wtb-room-code-display').textContent=code;
   document.getElementById('wtb-lobby-code-section').style.display='block';
-  // Hide start button for guests, show waiting message instead
+  // Hide host-only UI
+  const nameSection=document.getElementById('wtb-online-name-section');
+  if(nameSection)nameSection.style.display='none';
+  const roundsSection=document.getElementById('wtb-rounds-section');
+  if(roundsSection)roundsSection.style.display='none';
   const startBtn=document.getElementById('wtb-start-btn');
-  if(startBtn){
-    startBtn.style.display='none';
-  }
+  if(startBtn)startBtn.style.display='none';
   // Show waiting message
   let waitMsg=document.getElementById('wtb-guest-wait-msg');
   if(!waitMsg){
@@ -2867,7 +2873,7 @@ async function wtbJoinRoom(){
     waitMsg.id='wtb-guest-wait-msg';
     waitMsg.className='body-text';
     waitMsg.style.cssText='text-align:center;margin-top:8px;';
-    startBtn?.parentNode?.insertBefore(waitMsg,startBtn);
+    document.querySelector('#wtb-create .card')?.appendChild(waitMsg);
   }
   waitMsg.textContent=t('waiting_for_host');
   wtbRenderOnlinePlayers();
@@ -2919,7 +2925,7 @@ function onWtbRoomUpdate(data){
     return;
   }
 
-  // New round prompt — only route if on hand-list (between rounds)
+  // New round — only route if on hand-list AND prompt actually changed
   if(data.started&&data.word&&data.word!==WTB.prompt&&activeScreen==='wtb-hand-list'){
     WTB.prompt=data.word;
     wtbShowPromptRevealOnline();
@@ -2932,21 +2938,33 @@ function onWtbRoomUpdate(data){
     return;
   }
 
-  // Submissions updated — refresh hand list
+  // Submissions updated — refresh hand list only
   if(data.started&&activeScreen==='wtb-hand-list'){
     wtbRenderHandList();
     return;
   }
+  // Don't touch wtb-prompt-reveal, wtb-hand-pick, wtb-voting, wtb-roundresult screens
+  // Players navigated there themselves and polling should not bounce them back
 }
 
 function wtbShowPromptRevealOnline(){
   const judge=WTB.players[WTB.judgeIdx];
+  const amJudge=judge&&judge.id===S.pid;
   document.getElementById('wtb-pr-round').textContent=WTB.round;
   document.getElementById('wtb-pr-total').textContent=WTB.rounds;
   document.getElementById('wtb-pr-prompt').textContent=WTB.prompt;
   document.getElementById('wtb-pr-judge').textContent=judge?.name||'';
   const nonJudgeCount=WTB.players.length-1;
-  document.getElementById('wtb-pr-judge-note').textContent=t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount});
+  document.getElementById('wtb-pr-judge-note').textContent=
+    amJudge
+      ? t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount})
+      : t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount});
+  // Show/hide start picking button based on role
+  const pickBtn=document.querySelector('#wtb-prompt-reveal .pill-btn');
+  if(pickBtn)pickBtn.style.display=amJudge?'none':'block';
+  // Hide name input for everyone in online mode once game is active
+  const nameSection=document.getElementById('wtb-online-name-section');
+  if(nameSection)nameSection.style.display='none';
   go('wtb-prompt-reveal');
 }
 
