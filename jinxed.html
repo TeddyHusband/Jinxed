@@ -2642,17 +2642,17 @@ let WTB={
 
 function wtbStartCreate(mode){
   WTB.playMode=mode;
-  document.getElementById('wtb-online-name-section').style.display=mode==='online'?'block':'none';  document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
-  // Reset any leftover state from a previous mode visit
+  document.getElementById('wtb-online-name-section').style.display=mode==='online'?'block':'none';
+  document.getElementById('wtb-phone-players-section').style.display=mode==='phone'?'block':'none';
   document.getElementById('wtb-lobby-code-section').style.display='none';
   document.getElementById('wtb-start-btn').style.display='';
   document.getElementById('wtb-start-btn').textContent=t('wtb_start_game');
   document.getElementById('wtb-start-btn').dataset.state='';
   document.getElementById('wtb-start-btn').onclick=()=>{playClick();wtbConfirmCreate();};
-  // Clear any guest waiting message
   const guestMsg=document.getElementById('wtb-guest-wait-msg');
   if(guestMsg)guestMsg.remove();
-  WTB.code=null;
+  // Only clear code for phone mode or if explicitly resetting — NOT for online navigation
+  if(mode==='phone')WTB.code=null;
   if(mode==='phone'){WTB.playerCount=3;document.getElementById('wtb-player-disp').textContent=WTB.playerCount;wtbRenderNameInputs();}
   wtbUpdateRoundOptions();
   go('wtb-create');
@@ -2737,24 +2737,31 @@ async function wtbConfirmCreate(){
     const hostName=document.getElementById('wtb-host-name').value.trim();
     if(!hostName)return err('wtb-create-err',t('enter_name_err2'));
     S.pid=S.pid||uid();S.name=hostName;S.isHost=true;
+    const isNewRoom=!WTB.code;
     if(!WTB.code)WTB.code=rcode();
     const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
     const hand=shuffleArray([...answers]).slice(0,WTB_HAND_SIZE);
     const hostPlayer={id:S.pid,name:hostName,score:0,hand,submitted:false};
-    WTB.players=[hostPlayer];
-    WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];
+    if(isNewRoom){
+      WTB.players=[hostPlayer];
+      WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];
+    }
     const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
-    WTB.promptDeck=shuffleArray([...prompts]);
-    WTB.deck=shuffleArray([...answers]);
-    const {error}=await sb.from('rooms').upsert({
-      code:WTB.code,game:'wtb',mode:'wtb',cat:'wtb',
-      imps:WTB.rounds,players:WTB.players,
-      started:false,word:'',roles:{judgeIdx:0,round:1},
-      ready:{},
-    },{onConflict:'code'});
-    if(error){console.error('[WTB] upsert error:',error);err('wtb-create-err','Failed to create room: '+error.message);return;}
-    console.log('[WTB] room created/updated. code:',WTB.code);
-    wtbSubscribeRoom(WTB.code);
+    WTB.promptDeck=WTB.promptDeck||shuffleArray([...prompts]);
+    WTB.deck=WTB.deck||shuffleArray([...answers]);
+    if(isNewRoom){
+      const {error}=await sb.from('rooms').upsert({
+        code:WTB.code,game:'wtb',mode:'wtb',cat:'wtb',
+        imps:WTB.rounds,players:WTB.players,
+        started:false,word:'',roles:{judgeIdx:0,round:1},
+        ready:{},
+      },{onConflict:'code'});
+      if(error){console.error('[WTB] upsert error:',error);err('wtb-create-err','Failed to create room: '+error.message);return;}
+      console.log('[WTB] room created. code:',WTB.code);
+      wtbSubscribeRoom(WTB.code);
+    } else {
+      console.log('[WTB] room already exists. code:',WTB.code);
+    }
     document.getElementById('wtb-room-code-display').textContent=WTB.code;
     document.getElementById('wtb-lobby-code-section').style.display='block';
     const nameSection=document.getElementById('wtb-online-name-section');
@@ -2912,8 +2919,9 @@ function onWtbRoomUpdate(data){
     return;
   }
 
-  // New round — everyone on hand-list goes to new prompt reveal
-  if(data.started&&data.word&&(activeScreen==='wtb-hand-list'||activeScreen==='wtb-prompt-reveal')){
+  // New round prompt — only route if on hand-list (between rounds)
+  if(data.started&&data.word&&data.word!==WTB.prompt&&activeScreen==='wtb-hand-list'){
+    WTB.prompt=data.word;
     wtbShowPromptRevealOnline();
     return;
   }
