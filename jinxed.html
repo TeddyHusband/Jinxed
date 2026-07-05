@@ -2732,12 +2732,12 @@ function wtbSetupGame(uniqueNames){
   wtbUpdateRoundOptions();
 }
 
-function wtbConfirmCreate(){
+async function wtbConfirmCreate(){
   if(WTB.playMode==='online'){
     const hostName=document.getElementById('wtb-host-name').value.trim();
     if(!hostName)return err('wtb-create-err',t('enter_name_err2'));
     S.pid=S.pid||uid();S.name=hostName;S.isHost=true;
-    if(!WTB.code)WTB.code=rcode(); // only generate once
+    if(!WTB.code)WTB.code=rcode();
     const answers=appLang==='ar'?WTB_ANSWERS_AR:WTB_ANSWERS;
     const hand=shuffleArray([...answers]).slice(0,WTB_HAND_SIZE);
     const hostPlayer={id:S.pid,name:hostName,score:0,hand,submitted:false};
@@ -2746,18 +2746,17 @@ function wtbConfirmCreate(){
     const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
     WTB.promptDeck=shuffleArray([...prompts]);
     WTB.deck=shuffleArray([...answers]);
-    // Upsert to Supabase — safe to call multiple times with same code
-    sb.from('rooms').upsert({
+    const {error}=await sb.from('rooms').upsert({
       code:WTB.code,game:'wtb',mode:'wtb',cat:'wtb',
       imps:WTB.rounds,players:WTB.players,
       started:false,word:'',roles:{judgeIdx:0,round:1},
-    },{onConflict:'code'}).then(({error})=>{
-      if(error){console.error('WTB create error:',error);return;}
-      wtbSubscribeRoom(WTB.code);
-    });
+      ready:{},
+    },{onConflict:'code'});
+    if(error){console.error('[WTB] upsert error:',error);err('wtb-create-err','Failed to create room: '+error.message);return;}
+    console.log('[WTB] room created/updated. code:',WTB.code);
+    wtbSubscribeRoom(WTB.code);
     document.getElementById('wtb-room-code-display').textContent=WTB.code;
     document.getElementById('wtb-lobby-code-section').style.display='block';
-    // Hide name input since host already entered their name
     const nameSection=document.getElementById('wtb-online-name-section');
     if(nameSection)nameSection.style.display='none';
     generateQR('wtb-qr','wtb');
