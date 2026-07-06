@@ -2922,6 +2922,11 @@ function onWtbRoomUpdate(data){
   if(data.roles){
     WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;
     WTB.round=data.roles.round??WTB.round;
+    // Sync submitted state from Supabase to local players
+    if(data.roles.submittedIds&&!WTB._writingPlayers){
+      const ids=new Set(data.roles.submittedIds);
+      WTB.players.forEach(p=>{if(ids.has(p.id))p.submitted=true;});
+    }
   }
   if(data.word)WTB.prompt=data.word;
   if(data.imps)WTB.rounds=data.imps;
@@ -3034,12 +3039,14 @@ function wtbRenderHandList(){
   const isOnline=WTB.playMode==='online';
   const myPlayer=isOnline?WTB.players.find(p=>p.id===S.pid):null;
   const amJudge=isOnline&&myPlayer&&myPlayer.id===judge?.id;
+  // Use submissions array as source of truth — more reliable than p.submitted flag
+  const submittedIds=new Set(WTB.submissions.map(s=>s.playerId));
 
   WTB.players.forEach(p=>{
     const isJudge=p.id===judge?.id;
-    const done=p.submitted;
+    const done=submittedIds.has(p.id)||p.submitted;
     const isMe=isOnline&&p.id===S.pid;
-    const canPick=!isOnline||(isMe&&!isJudge); // online: only tap your own; pass-phone: anyone
+    const canPick=!isOnline||(isMe&&!isJudge);
 
     const d=document.createElement('div');
     d.className='tap-card'+(done?' done':'');
@@ -3054,7 +3061,7 @@ function wtbRenderHandList(){
 
   // Only host (online) or anyone (pass-phone) can advance to judging
   const nonJudges=WTB.players.filter(p=>p.id!==judge?.id);
-  const allSubmitted=nonJudges.every(p=>p.submitted);
+  const allSubmitted=nonJudges.every(p=>submittedIds.has(p.id)||p.submitted);
   const canAdvance=allSubmitted&&(!isOnline||S.isHost||amJudge);
   if(canAdvance){
     const btn=document.createElement('button');
@@ -3091,8 +3098,11 @@ async function wtbPlayCard(player,idx,card){
   player.hand.splice(idx,1);
   player.submitted=true;
   if(WTB.playMode==='online'){
-    WTB._writingPlayers=true; // lock flag
-    await sb.from('rooms').update({players:WTB.players}).eq('code',WTB.code);
+    WTB._writingPlayers=true;
+    // Store submission IDs in roles.submissions so all clients can see who submitted
+    const submittedIds=WTB.submissions.map(s=>s.playerId);
+    const roles={judgeIdx:WTB.judgeIdx,round:WTB.round,submittedIds};
+    await sb.from('rooms').update({players:WTB.players,roles}).eq('code',WTB.code);
     WTB._writingPlayers=false;
   }
   wtbRenderHandList();
