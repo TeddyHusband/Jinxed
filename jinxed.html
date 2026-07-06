@@ -2912,7 +2912,12 @@ function onWtbRoomUpdate(data){
   const activeScreen=document.querySelector('.screen.active')?.id;
 
   // Sync all state from Supabase first
-  if(data.players)WTB.players=data.players;
+  if(data.players){
+    // Only update players if incoming data has equal or more submissions than local
+    const incomingSubmitted=(data.players||[]).filter(p=>p.submitted).length;
+    const localSubmitted=(WTB.players||[]).filter(p=>p.submitted).length;
+    if(incomingSubmitted>=localSubmitted)WTB.players=data.players;
+  }
   if(data.roles){
     WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;
     WTB.round=data.roles.round??WTB.round;
@@ -3079,14 +3084,18 @@ function wtbOpenHand(player){
   go('wtb-hand-pick');
 }
 
-function wtbPlayCard(player,idx,card){
+async function wtbPlayCard(player,idx,card){
   playCardPlace();
   WTB.submissions.push({playerId:player.id,playerName:player.name,card});
   player.hand.splice(idx,1);
   player.submitted=true;
   if(WTB.playMode==='online'){
-    // Sync updated players to Supabase
-    sb.from('rooms').update({players:WTB.players}).eq('code',WTB.code);
+    // Sync to Supabase and pause polling briefly to prevent immediate overwrite
+    const snapshot=[...WTB.players];
+    if(window.__wtbPoll){clearInterval(window.__wtbPoll);window.__wtbPoll=null;}
+    await sb.from('rooms').update({players:snapshot}).eq('code',WTB.code);
+    // Restart polling after write confirms
+    wtbSubscribeRoom(WTB.code);
   }
   wtbRenderHandList();
   go('wtb-hand-list');
