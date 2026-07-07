@@ -2922,11 +2922,16 @@ function onWtbRoomUpdate(data){
   if(data.roles){
     WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;
     WTB.round=data.roles.round??WTB.round;
-    // Sync submitted state from Supabase to local players
-    if(data.roles.submittedIds&&!WTB._writingPlayers){
-      const ids=new Set(data.roles.submittedIds);
-      WTB.players.forEach(p=>{if(ids.has(p.id))p.submitted=true;});
-    }
+  }
+  // Sync submissions from Supabase — this is the cross-device source of truth
+  if(data.submissions&&!WTB._writingPlayers){
+    // Merge: keep any local submissions not yet in Supabase
+    const remoteIds=new Set((data.submissions||[]).map(s=>s.playerId));
+    const localOnly=WTB.submissions.filter(s=>!remoteIds.has(s.playerId));
+    WTB.submissions=[...data.submissions,...localOnly];
+    // Update p.submitted flags based on merged submissions
+    const allSubmittedIds=new Set(WTB.submissions.map(s=>s.playerId));
+    WTB.players.forEach(p=>{if(allSubmittedIds.has(p.id))p.submitted=true;});
   }
   if(data.word)WTB.prompt=data.word;
   if(data.imps)WTB.rounds=data.imps;
@@ -2939,9 +2944,10 @@ function onWtbRoomUpdate(data){
     return;
   }
 
-  // New round — only route if on hand-list AND prompt actually changed
+  // New round — word changed while on hand-list → go to new prompt
   if(data.started&&data.word&&data.word!==WTB.prompt&&activeScreen==='wtb-hand-list'){
-    WTB.prompt=data.word;
+    WTB.submissions=[];
+    WTB.players.forEach(p=>{p.submitted=false;});
     wtbShowPromptRevealOnline();
     return;
   }
@@ -2997,6 +3003,7 @@ async function wtbBeginGame(){
       roles:{judgeIdx:WTB.judgeIdx,round:WTB.round},
       players:WTB.players,
       imps:WTB.rounds,
+      submissions:[],
     }).eq('code',WTB.code);
     if(error){console.error('[WTB] wtbBeginGame write error:',error);return;}
     console.log('[WTB] game started. code:',WTB.code,'prompt:',WTB.prompt);
@@ -3094,15 +3101,17 @@ function wtbOpenHand(player){
 
 async function wtbPlayCard(player,idx,card){
   playCardPlace();
-  WTB.submissions.push({playerId:player.id,playerName:player.name,card});
+  const submission={playerId:player.id,playerName:player.name,card};
+  WTB.submissions.push(submission);
   player.hand.splice(idx,1);
   player.submitted=true;
   if(WTB.playMode==='online'){
     WTB._writingPlayers=true;
-    // Store submission IDs in roles.submissions so all clients can see who submitted
-    const submittedIds=WTB.submissions.map(s=>s.playerId);
-    const roles={judgeIdx:WTB.judgeIdx,round:WTB.round,submittedIds};
-    await sb.from('rooms').update({players:WTB.players,roles}).eq('code',WTB.code);
+    const {error}=await sb.from('rooms').update({
+      players:WTB.players,
+      submissions:WTB.submissions,
+    }).eq('code',WTB.code);
+    if(error)console.error('[WTB] wtbPlayCard write error:',error);
     WTB._writingPlayers=false;
   }
   wtbRenderHandList();
@@ -3197,11 +3206,26 @@ function wtbAwardPoint(winningSub){
   go('wtb-roundresult');
 }
 
-function wtbNextRound(){
+async function wtbNextRound(){
   if(WTB.round>=WTB.rounds){wtbShowFinal();return;}
   WTB.round+=1;
   WTB.judgeIdx=(WTB.judgeIdx+1)%WTB.players.length;
-  wtbStartRound();
+  WTB.submissions=[];
+  WTB.players.forEach(p=>{p.submitted=false;});
+  if(WTB.playMode==='online'){
+    const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
+    if(!WTB.promptDeck||WTB.promptDeck.length===0)WTB.promptDeck=shuffleArray([...prompts]);
+    WTB.prompt=WTB.promptDeck.pop();
+    await sb.from('rooms').update({
+      word:WTB.prompt,
+      roles:{judgeIdx:WTB.judgeIdx,round:WTB.round},
+      players:WTB.players,
+      submissions:[],
+    }).eq('code',WTB.code);
+    wtbShowPromptRevealOnline();
+  } else {
+    wtbStartRound();
+  }
 }
 
 function wtbShowFinal(){
