@@ -3124,19 +3124,24 @@ function wtbSetPickStyle(style){
 let wtbCurrentHandPlayer=null;
 
 function wtbOpenHand(player){
-  wtbCurrentHandPlayer=player;
-  document.getElementById('wtb-current-player-name').textContent=player.name;
+  // Always get fresh reference from WTB.players
+  const freshPlayer=WTB.players.find(p=>p.id===player.id)||player;
+  wtbCurrentHandPlayer=freshPlayer;
+  document.getElementById('wtb-current-player-name').textContent=freshPlayer.name;
   document.getElementById('wtb-prompt-display-2').textContent=WTB.prompt;
-  wtbRenderHand(player);
+  wtbRenderHand(freshPlayer);
   go('wtb-hand-pick');
 }
 
 async function wtbPlayCard(player,idx,card){
   playCardPlace();
-  const submission={playerId:player.id,playerName:player.name,card};
+  // Always find fresh player reference from WTB.players — polling may have replaced the array
+  const freshPlayer=WTB.players.find(p=>p.id===player.id)||player;
+  const submission={playerId:freshPlayer.id,playerName:freshPlayer.name,card};
   WTB.submissions.push(submission);
-  player.hand.splice(idx,1);
-  player.submitted=true;
+  freshPlayer.hand=freshPlayer.hand||player.hand;
+  if(freshPlayer.hand[idx]!==undefined)freshPlayer.hand.splice(idx,1);
+  freshPlayer.submitted=true;
   if(WTB.playMode==='online'){
     WTB._writingPlayers=true;
     const {error}=await sb.from('rooms').update({
