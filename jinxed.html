@@ -2925,13 +2925,15 @@ function onWtbRoomUpdate(data){
   }
   // Sync submissions from Supabase — this is the cross-device source of truth
   if(data.submissions&&!WTB._writingPlayers){
-    // Merge: keep any local submissions not yet in Supabase
     const remoteIds=new Set((data.submissions||[]).map(s=>s.playerId));
     const localOnly=WTB.submissions.filter(s=>!remoteIds.has(s.playerId));
     WTB.submissions=[...data.submissions,...localOnly];
-    // Update p.submitted flags based on merged submissions
     const allSubmittedIds=new Set(WTB.submissions.map(s=>s.playerId));
     WTB.players.forEach(p=>{if(allSubmittedIds.has(p.id))p.submitted=true;});
+    // Update judge button if judge is waiting on prompt reveal
+    if(activeScreen==='wtb-prompt-reveal')wtbUpdateJudgeBtn();
+    // Refresh hand list to show updated submission states
+    if(activeScreen==='wtb-hand-list')wtbRenderHandList();
   }
   if(data.word)WTB.prompt=data.word;
   if(data.imps)WTB.rounds=data.imps;
@@ -2976,16 +2978,46 @@ function wtbShowPromptRevealOnline(){
   document.getElementById('wtb-pr-judge').textContent=judge?.name||'';
   const nonJudgeCount=WTB.players.length-1;
   document.getElementById('wtb-pr-judge-note').textContent=
-    amJudge
-      ? t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount})
-      : t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount});
+    t('judge_waiting_detail',{name:judge?.name||'',n:nonJudgeCount});
   // Show/hide start picking button based on role
   const pickBtn=document.querySelector('#wtb-prompt-reveal .pill-btn');
   if(pickBtn)pickBtn.style.display=amJudge?'none':'block';
-  // Hide name input for everyone in online mode once game is active
+  // Add judge advance button if judge
+  if(amJudge){
+    let judgeBtn=document.getElementById('wtb-judge-advance-btn');
+    if(!judgeBtn){
+      judgeBtn=document.createElement('button');
+      judgeBtn.id='wtb-judge-advance-btn';
+      judgeBtn.className='pill-btn';
+      judgeBtn.style.cssText='margin-top:16px;opacity:0.4;pointer-events:none;';
+      judgeBtn.onclick=()=>{playReveal();wtbShowJudging();};
+      document.querySelector('#wtb-prompt-reveal .card')?.appendChild(judgeBtn);
+    }
+    judgeBtn.textContent='Waiting for answers... (0/'+nonJudgeCount+')';
+    judgeBtn.style.opacity='0.4';
+    judgeBtn.style.pointerEvents='none';
+    WTB._judgeNonJudgeCount=nonJudgeCount;
+    wtbUpdateJudgeBtn();
+  }
+  // Hide name input for everyone in online mode
   const nameSection=document.getElementById('wtb-online-name-section');
   if(nameSection)nameSection.style.display='none';
   go('wtb-prompt-reveal');
+}
+
+function wtbUpdateJudgeBtn(){
+  const btn=document.getElementById('wtb-judge-advance-btn');
+  if(!btn)return;
+  const submittedIds=new Set(WTB.submissions.map(s=>s.playerId));
+  const nonJudgeCount=WTB._judgeNonJudgeCount||0;
+  const submittedCount=[...submittedIds].filter(id=>{
+    const p=WTB.players.find(q=>q.id===id);
+    return p&&p.id!==WTB.players[WTB.judgeIdx]?.id;
+  }).length;
+  const allIn=submittedCount>=nonJudgeCount&&nonJudgeCount>0;
+  btn.textContent=allIn?'Start Judging →':'Waiting for answers... ('+submittedCount+'/'+nonJudgeCount+')';
+  btn.style.opacity=allIn?'1':'0.4';
+  btn.style.pointerEvents=allIn?'auto':'none';
 }
 
 async function wtbBeginGame(){
