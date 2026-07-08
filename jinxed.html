@@ -2940,6 +2940,31 @@ function onWtbRoomUpdate(data){
 
   console.log('[WTB] onWtbRoomUpdate. activeScreen:',activeScreen,'started:',data.started,'isHost:',S.isHost,'prompt:',WTB.prompt);
 
+  // Round result arrived — route guests to round result screen
+  if(data.lastResult&&data.lastResult.winnerId&&!S.isHost&&
+    (activeScreen==='wtb-hand-list'||activeScreen==='wtb-prompt-reveal'||activeScreen==='wtb-voting')){
+    const lr=data.lastResult;
+    // Sync scores
+    if(lr.scores)lr.scores.forEach(s=>{const p=WTB.players.find(q=>q.id===s.id);if(p)p.score=s.score;});
+    document.getElementById('wtb-round-winner-name').textContent=lr.winnerName||'?';
+    const sentence=(lr.prompt||WTB.prompt).replace('___',(lr.winningCard||'').toUpperCase());
+    document.getElementById('wtb-winning-card-display').textContent=sentence;
+    const sb_el=document.getElementById('wtb-scoreboard');
+    sb_el.innerHTML='';
+    const judge=WTB.players[WTB.judgeIdx];
+    [...WTB.players].sort((a,b)=>b.score-a.score).forEach((p,i)=>{
+      const d=document.createElement('div');d.className='cfg-row';
+      d.innerHTML=`<span class="cfg-lbl">${i===0?'🏆 ':''} ${p.name}${judge&&p.id===judge.id?' 👑':''}</span><span class="cfg-val">${p.score} ${p.score===1?t('pt_singular'):t('pt_plural')}</span>`;
+      sb_el.appendChild(d);
+    });
+    document.getElementById('wtb-next-judge-preview').textContent=lr.isLastRound?t('final_round_complete'):t('next_judge_preview',{name:lr.nextJudgeName||''});
+    document.getElementById('wtb-next-btn').textContent=lr.isLastRound?t('see_final_results'):t('next_round_arrow');
+    // Hide next button for guests — only host advances
+    document.getElementById('wtb-next-btn').style.display='none';
+    go('wtb-roundresult');
+    return;
+  }
+
   // Game started — guests on lobby go to prompt reveal
   if(data.started&&!S.isHost&&activeScreen==='wtb-create'){
     if(data.word)WTB.prompt=data.word;
@@ -2950,7 +2975,7 @@ function onWtbRoomUpdate(data){
   // New round — word changed while on hand-list → go to new prompt
   // Must check BEFORE updating WTB.prompt
   if(data.started&&data.word&&data.word!==WTB.prompt&&
-    (activeScreen==='wtb-hand-list'||activeScreen==='wtb-voting'||activeScreen==='wtb-roundresult')){
+    (activeScreen==='wtb-hand-list'||activeScreen==='wtb-voting'||activeScreen==='wtb-roundresult'||activeScreen==='wtb-prompt-reveal')){
     WTB.submissions=[];
     WTB.players.forEach(p=>{p.submitted=false;});
     if(data.roles){WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;WTB.round=data.roles.round??WTB.round;}
@@ -3216,26 +3241,25 @@ function wtbShowJudging(){
   go('wtb-voting');
 }
 
-function wtbAwardPoint(winningSub){
+async function wtbAwardPoint(winningSub){
   const winner=WTB.players.find(p=>p.id===winningSub.playerId);
   if(winner)winner.score+=1;
   const judge=WTB.players[WTB.judgeIdx];
 
   document.getElementById('wtb-round-winner-name').textContent=winner?winner.name:'?';
-  // Show winning card in context
   const sentence=WTB.prompt.replace('___',winningSub.card.toUpperCase());
   document.getElementById('wtb-winning-card-display').textContent=sentence;
 
   // Scoreboard
-  const sb=document.getElementById('wtb-scoreboard');
-  sb.innerHTML='';
+  const sb_el=document.getElementById('wtb-scoreboard');
+  sb_el.innerHTML='';
   [...WTB.players].sort((a,b)=>b.score-a.score).forEach((p,i)=>{
     const d=document.createElement('div');d.className='cfg-row';
     d.innerHTML=`<span class="cfg-lbl">${i===0?'🏆 ':''} ${p.name}${p.id===judge.id?' 👑':''}</span><span class="cfg-val">${p.score} ${p.score===1?t('pt_singular'):t('pt_plural')}</span>`;
-    sb.appendChild(d);
+    sb_el.appendChild(d);
   });
 
-  // Refill non-judge hands to WTB_HAND_SIZE
+  // Refill non-judge hands
   WTB.players.forEach(p=>{
     if(p.id!==judge.id){
       const need=WTB_HAND_SIZE-p.hand.length;
@@ -3243,12 +3267,31 @@ function wtbAwardPoint(winningSub){
     }
   });
 
-  // Next judge preview
   const nextJudgeIdx=(WTB.judgeIdx+1)%WTB.players.length;
   const nextJudge=WTB.players[nextJudgeIdx];
   const isLastRound=WTB.round>=WTB.rounds;
   document.getElementById('wtb-next-judge-preview').textContent=isLastRound?t('final_round_complete'):t('next_judge_preview',{name:nextJudge.name});
   document.getElementById('wtb-next-btn').textContent=isLastRound?t('see_final_results'):t('next_round_arrow');
+  document.getElementById('wtb-next-btn').style.display='';
+
+  // Broadcast round result to all players via Supabase
+  if(WTB.playMode==='online'){
+    const roundResult={
+      winnerId:winner?.id,
+      winnerName:winner?.name,
+      winningCard:winningSub.card,
+      prompt:WTB.prompt,
+      scores:WTB.players.map(p=>({id:p.id,name:p.name,score:p.score})),
+      nextJudgeName:nextJudge?.name,
+      isLastRound,
+    };
+    await sb.from('rooms').update({
+      players:WTB.players,
+      submissions:WTB.submissions,
+      lastResult:roundResult,
+    }).eq('code',WTB.code);
+  }
+
   go('wtb-roundresult');
 }
 
@@ -3267,6 +3310,7 @@ async function wtbNextRound(){
       roles:{judgeIdx:WTB.judgeIdx,round:WTB.round},
       players:WTB.players,
       submissions:[],
+      lastResult:null,
     }).eq('code',WTB.code);
     wtbShowPromptRevealOnline();
   } else {
