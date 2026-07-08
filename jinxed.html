@@ -2942,17 +2942,27 @@ function onWtbRoomUpdate(data){
 
   // Game started — guests on lobby go to prompt reveal
   if(data.started&&!S.isHost&&activeScreen==='wtb-create'){
+    if(data.word)WTB.prompt=data.word;
     wtbShowPromptRevealOnline();
     return;
   }
 
   // New round — word changed while on hand-list → go to new prompt
-  if(data.started&&data.word&&data.word!==WTB.prompt&&activeScreen==='wtb-hand-list'){
+  // Must check BEFORE updating WTB.prompt
+  if(data.started&&data.word&&data.word!==WTB.prompt&&
+    (activeScreen==='wtb-hand-list'||activeScreen==='wtb-voting'||activeScreen==='wtb-roundresult')){
     WTB.submissions=[];
     WTB.players.forEach(p=>{p.submitted=false;});
+    if(data.roles){WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;WTB.round=data.roles.round??WTB.round;}
+    WTB.prompt=data.word;
+    if(data.players)WTB.players=data.players;
     wtbShowPromptRevealOnline();
     return;
   }
+
+  // Now safe to update prompt
+  if(data.word)WTB.prompt=data.word;
+  if(data.imps)WTB.rounds=data.imps;
 
   // Player joined — update lobby list
   if(!data.started&&activeScreen==='wtb-create'){
@@ -2960,13 +2970,12 @@ function onWtbRoomUpdate(data){
     return;
   }
 
-  // Submissions updated — refresh hand list only
+  // Submissions updated — refresh hand list
   if(data.started&&activeScreen==='wtb-hand-list'){
     wtbRenderHandList();
     return;
   }
-  // Don't touch wtb-prompt-reveal, wtb-hand-pick, wtb-voting, wtb-roundresult screens
-  // Players navigated there themselves and polling should not bounce them back
+  // Don't bounce wtb-prompt-reveal, wtb-hand-pick, wtb-voting, wtb-roundresult
 }
 
 function wtbShowPromptRevealOnline(){
