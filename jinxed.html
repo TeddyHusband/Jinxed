@@ -2972,14 +2972,14 @@ function onWtbRoomUpdate(data){
     return;
   }
 
-  // New round — word changed while on hand-list → go to new prompt
-  // Must check BEFORE updating WTB.prompt
-  if(data.started&&data.word&&data.word!==WTB.prompt&&
+  // New round — detect by round number change, not word comparison
+  const incomingRound=data.roles?.round??WTB.round;
+  if(data.started&&incomingRound>WTB.round&&
     (activeScreen==='wtb-hand-list'||activeScreen==='wtb-voting'||activeScreen==='wtb-roundresult'||activeScreen==='wtb-prompt-reveal')){
     WTB.submissions=[];
     WTB.players.forEach(p=>{p.submitted=false;});
     if(data.roles){WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;WTB.round=data.roles.round??WTB.round;}
-    WTB.prompt=data.word;
+    if(data.word)WTB.prompt=data.word;
     if(data.players)WTB.players=data.players;
     wtbShowPromptRevealOnline();
     return;
