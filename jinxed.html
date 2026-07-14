@@ -2912,39 +2912,40 @@ function onWtbRoomUpdate(data){
   if(!WTB.code)return;
   const activeScreen=document.querySelector('.screen.active')?.id;
 
-  // Sync all state from Supabase first
+  // Capture OLD round BEFORE any state sync — critical for new-round detection
+  const oldRound=WTB.round;
+  const incomingRound=data.roles?.round??WTB.round;
+
+  // Sync players
   if(data.players&&!WTB._writingPlayers){
-    // Only update players if incoming data has equal or more submissions than local
     const incomingSubmitted=(data.players||[]).filter(p=>p.submitted).length;
     const localSubmitted=(WTB.players||[]).filter(p=>p.submitted).length;
     if(incomingSubmitted>=localSubmitted)WTB.players=data.players;
   }
-  if(data.roles){
-    WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;
-    WTB.round=data.roles.round??WTB.round;
-  }
-  // Sync submissions from Supabase — this is the cross-device source of truth
+
+  // Sync judgeIdx but NOT WTB.round yet — need oldRound comparison below
+  if(data.roles)WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;
+
+  // Sync submissions
   if(data.submissions&&!WTB._writingPlayers){
     const remoteIds=new Set((data.submissions||[]).map(s=>s.playerId));
     const localOnly=WTB.submissions.filter(s=>!remoteIds.has(s.playerId));
     WTB.submissions=[...data.submissions,...localOnly];
     const allSubmittedIds=new Set(WTB.submissions.map(s=>s.playerId));
     WTB.players.forEach(p=>{if(allSubmittedIds.has(p.id))p.submitted=true;});
-    // Update judge button if judge is waiting on prompt reveal
     if(activeScreen==='wtb-prompt-reveal')wtbUpdateJudgeBtn();
-    // Refresh hand list to show updated submission states
     if(activeScreen==='wtb-hand-list')wtbRenderHandList();
   }
-  if(data.word)WTB.prompt=data.word;
   if(data.imps)WTB.rounds=data.imps;
 
-  console.log('[WTB] onWtbRoomUpdate. activeScreen:',activeScreen,'started:',data.started,'isHost:',S.isHost,'prompt:',WTB.prompt);
+  console.log('[WTB] onWtbRoomUpdate. screen:',activeScreen,'oldRound:',oldRound,'incomingRound:',incomingRound,'started:',data.started);
 
-  // Round result arrived — route guests to round result screen
+  // Round result — route guests to result screen
   if(data.lastResult&&data.lastResult.winnerId&&!S.isHost&&
     (activeScreen==='wtb-hand-list'||activeScreen==='wtb-prompt-reveal'||activeScreen==='wtb-voting')){
+    WTB.round=incomingRound;
+    if(data.word)WTB.prompt=data.word;
     const lr=data.lastResult;
-    // Sync scores
     if(lr.scores)lr.scores.forEach(s=>{const p=WTB.players.find(q=>q.id===s.id);if(p)p.score=s.score;});
     document.getElementById('wtb-round-winner-name').textContent=lr.winnerName||'?';
     const sentence=(lr.prompt||WTB.prompt).replace('___',(lr.winningCard||'').toUpperCase());
@@ -2959,7 +2960,6 @@ function onWtbRoomUpdate(data){
     });
     document.getElementById('wtb-next-judge-preview').textContent=lr.isLastRound?t('final_round_complete'):t('next_judge_preview',{name:lr.nextJudgeName||''});
     document.getElementById('wtb-next-btn').textContent=lr.isLastRound?t('see_final_results'):t('next_round_arrow');
-    // Hide next button for guests — only host advances
     document.getElementById('wtb-next-btn').style.display='none';
     go('wtb-roundresult');
     return;
@@ -2967,27 +2967,29 @@ function onWtbRoomUpdate(data){
 
   // Game started — guests on lobby go to prompt reveal
   if(data.started&&!S.isHost&&activeScreen==='wtb-create'){
+    WTB.round=incomingRound;
     if(data.word)WTB.prompt=data.word;
     wtbShowPromptRevealOnline();
     return;
   }
 
-  // New round — detect by round number change, not word comparison
-  const incomingRound=data.roles?.round??WTB.round;
-  if(data.started&&incomingRound>WTB.round&&
-    (activeScreen==='wtb-hand-list'||activeScreen==='wtb-voting'||activeScreen==='wtb-roundresult'||activeScreen==='wtb-prompt-reveal')){
+  // New round — incomingRound is greater than oldRound (before sync)
+  if(data.started&&incomingRound>oldRound&&
+    (activeScreen==='wtb-hand-list'||activeScreen==='wtb-voting'||
+     activeScreen==='wtb-roundresult'||activeScreen==='wtb-prompt-reveal')){
     WTB.submissions=[];
     WTB.players.forEach(p=>{p.submitted=false;});
-    if(data.roles){WTB.judgeIdx=data.roles.judgeIdx??WTB.judgeIdx;WTB.round=data.roles.round??WTB.round;}
+    WTB.round=incomingRound;
+    WTB.judgeIdx=data.roles?.judgeIdx??WTB.judgeIdx;
     if(data.word)WTB.prompt=data.word;
     if(data.players)WTB.players=data.players;
     wtbShowPromptRevealOnline();
     return;
   }
 
-  // Now safe to update prompt
+  // Safe to update remaining state
+  WTB.round=incomingRound;
   if(data.word)WTB.prompt=data.word;
-  if(data.imps)WTB.rounds=data.imps;
 
   // Player joined — update lobby list
   if(!data.started&&activeScreen==='wtb-create'){
@@ -2998,9 +3000,7 @@ function onWtbRoomUpdate(data){
   // Submissions updated — refresh hand list
   if(data.started&&activeScreen==='wtb-hand-list'){
     wtbRenderHandList();
-    return;
   }
-  // Don't bounce wtb-prompt-reveal, wtb-hand-pick, wtb-voting, wtb-roundresult
 }
 
 function wtbShowPromptRevealOnline(){
