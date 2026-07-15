@@ -2965,6 +2965,24 @@ function onWtbRoomUpdate(data){
     return;
   }
 
+  // lastResult cleared = host started new round — route guest from result screen
+  if(!data.lastResult&&!S.isHost&&activeScreen==='wtb-roundresult'){
+    WTB.submissions=[];
+    WTB.players.forEach(p=>{p.submitted=false;});
+    WTB.round=incomingRound;
+    WTB.judgeIdx=data.roles?.judgeIdx??WTB.judgeIdx;
+    if(data.word)WTB.prompt=data.word;
+    if(data.players)WTB.players=data.players;
+    wtbShowPromptRevealOnline();
+    return;
+  }
+
+  // Game over — show final screen to guests
+  if(data.lastResult?.final&&!S.isHost){
+    wtbShowFinal();
+    return;
+  }
+
   // Game started — guests on lobby go to prompt reveal
   if(data.started&&!S.isHost&&activeScreen==='wtb-create'){
     WTB.round=incomingRound;
@@ -3296,7 +3314,13 @@ async function wtbAwardPoint(winningSub){
 }
 
 async function wtbNextRound(){
-  if(WTB.round>=WTB.rounds){wtbShowFinal();return;}
+  if(WTB.round>=WTB.rounds){
+    if(WTB.playMode==='online'){
+      await sb.from('rooms').update({started:false,lastResult:{final:true},submissions:[]}).eq('code',WTB.code);
+    }
+    wtbShowFinal();
+    return;
+  }
   WTB.round+=1;
   WTB.judgeIdx=(WTB.judgeIdx+1)%WTB.players.length;
   WTB.submissions=[];
