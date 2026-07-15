@@ -2751,7 +2751,7 @@ async function wtbConfirmCreate(){
     const hostPlayer={id:S.pid,name:hostName,score:0,hand,submitted:false};
     if(isNewRoom){
       WTB.players=[hostPlayer];
-      WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];
+      WTB.round=1;WTB.judgeIdx=0;WTB.submissions=[];WTB._finalShown=false;
     }
     const prompts=appLang==='ar'?WTB_PROMPTS_AR:WTB_PROMPTS;
     WTB.promptDeck=WTB.promptDeck||shuffleArray([...prompts]);
@@ -3153,7 +3153,7 @@ function wtbRenderHandList(){
   // Only host (online) or anyone (pass-phone) can advance to judging
   const nonJudges=WTB.players.filter(p=>p.id!==judge?.id);
   const allSubmitted=nonJudges.every(p=>submittedIds.has(p.id)||p.submitted);
-  const canAdvance=allSubmitted&&(!isOnline||S.isHost||amJudge);
+  const canAdvance=allSubmitted&&amJudge;
   if(canAdvance){
     const btn=document.createElement('button');
     btn.className='pill-btn';btn.style.cssText='width:100%;border-radius:12px;padding:15px;margin-top:10px;font-size:15px;';
@@ -3343,7 +3343,8 @@ async function wtbNextRound(){
 }
 
 function wtbShowFinal(){
-  playWinner();
+  if(!WTB._finalShown)playWinner();
+  WTB._finalShown=true;
   const sorted=[...WTB.players].sort((a,b)=>b.score-a.score);
   document.getElementById('wtb-final-winner').textContent=sorted[0].name;
   const fsb=document.getElementById('wtb-final-scoreboard');
